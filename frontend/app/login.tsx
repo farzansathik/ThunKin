@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { supabase } from "../lib/supabase";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -13,10 +14,76 @@ import {
 export default function LoginScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [accountType, setAccountType] = useState("user");
 
-  const handleAuth = () => {
-    router.replace("/(tabs)");
-  };
+const handleAuth = async () => {
+
+  const cleanEmail = email.trim();
+  const cleanPassword = password.trim();
+
+  if (isLogin) {
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: cleanEmail,
+    password: cleanPassword
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", cleanEmail)
+    .single();
+
+  if (profileError) {
+    alert("User profile not found");
+    return;
+  }
+
+  const userId = profile.id;
+
+  console.log("Logged in user ID:", userId);
+
+  if (profile.account === "vendor") {
+  router.replace("/vendor");
+} else {
+  router.replace("/(tabs)");
+}
+} else {
+
+  const { data, error } = await supabase.auth.signUp({
+    email: cleanEmail,
+    password: cleanPassword
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  const { data: userRow, error: insertError } = await supabase.from("users").insert([
+  {
+    email: cleanEmail,
+    account: accountType
+  }
+  ])
+    .select()
+    .single();
+
+  if (insertError) {
+    alert(insertError.message);
+    return;
+  }
+
+  alert("Account created!");
+}
+};
 
   return (
     <KeyboardAvoidingView
@@ -42,12 +109,46 @@ export default function LoginScreen() {
             placeholderTextColor="#AAA"
           />
         )}
+            {!isLogin && (
+      <View style={{ flexDirection: "row", marginBottom: 14 }}>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            padding: 12,
+            backgroundColor: accountType === "user" ? "#E95D91" : "#EEE",
+            borderRadius: 10,
+            marginRight: 6,
+            alignItems: "center"
+          }}
+          onPress={() => setAccountType("user")}
+        >
+          <Text>User</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            padding: 12,
+            backgroundColor: accountType === "vendor" ? "#E95D91" : "#EEE",
+            borderRadius: 10,
+            marginLeft: 6,
+            alignItems: "center"
+          }}
+          onPress={() => setAccountType("vendor")}
+        >
+          <Text>Vendor</Text>
+        </TouchableOpacity>
+      </View>
+    )}
 
         <TextInput
           style={styles.input}
           placeholder="Email address"
           placeholderTextColor="#AAA"
           autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
         />
 
         <TextInput
@@ -55,6 +156,8 @@ export default function LoginScreen() {
           placeholder="Password"
           placeholderTextColor="#AAA"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
 
         <TouchableOpacity style={styles.primaryButton} onPress={handleAuth}>

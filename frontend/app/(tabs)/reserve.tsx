@@ -1,30 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import {
-    FlatList,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-
-const CANTEENS = [
-  {
-    id: "1",
-    name: "Engineering Canteen",
-    time: "08:00 - 16:45",
-    dist: "5 min walk",
-  },
-  {
-    id: "2",
-    name: "Arts Canteen",
-    time: "07:00 - 18:00",
-    dist: "6 min walk",
-  },
-];
+import { supabase } from "../../lib/supabase";
 
 export default function ReserveScreen() {
+  const router = useRouter();
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+
+  const fetchRestaurants = async () => {
+    const { data, error } = await supabase.from("restaurant").select("*");
+
+    if (error) {
+      console.log("Error fetching restaurants:", error);
+      return;
+    }
+
+    setRestaurants(data || []);
+  };
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -48,11 +54,22 @@ export default function ReserveScreen() {
 
       {/* LIST */}
       <FlatList
-        data={CANTEENS}
-        keyExtractor={(item) => item.id}
+        data={restaurants}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ padding: 20 }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: "/restaurant",
+                params: {
+                  restId: item.id,
+                  restName: item.name,
+                },
+              })
+            }
+          >
             <View style={styles.cardLeft}>
               <View style={styles.logoCircle}>
                 <Ionicons name="restaurant" size={22} color="#E95D91" />
@@ -60,13 +77,16 @@ export default function ReserveScreen() {
 
               <View>
                 <Text style={styles.cardTitle}>{item.name}</Text>
-                <Text style={styles.cardTime}>OPEN • {item.time}</Text>
+
+                <Text style={styles.cardTime}>
+                  {item.status === "open" ? "OPEN" : "CLOSED"}
+                </Text>
               </View>
             </View>
 
             <View style={styles.distance}>
               <Ionicons name="walk-outline" size={14} color="#E95D91" />
-              <Text style={styles.distText}>{item.dist}</Text>
+              <Text style={styles.distText}>5 min</Text>
             </View>
           </TouchableOpacity>
         )}
