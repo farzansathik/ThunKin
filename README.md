@@ -1,20 +1,23 @@
-🍔 Thunkin – Food Ordering Mobile AppThunkin is a full-stack mobile food ordering application built with React Native (Expo) and Supabase.
+🍔 **Thunkin** – Food Ordering Mobile AppThunkin is a full-stack mobile food ordering application built with React Native (Expo) and Supabase.
 It provides a seamless experience for browsing menus, managing a real-time cart, and handling user authentication through a PostgreSQL backend.
-🚀 Overview : This project demonstrates a robust mobile architecture, bridging a modern frontend with a powerful Backend-as-a-Service (BaaS).
+🚀 **Overview** : This project demonstrates a robust mobile architecture, bridging a modern frontend with a powerful Backend-as-a-Service (BaaS).
 
-Frontend: React Native with Expo Router for file-based navigation.
-Backend: Supabase (PostgreSQL) for data persistence and Secure Auth.
-Integration: Real-time API interaction between the mobile client and the database.
-🛠 Tech StackFrontend Framework: React Native / ExpoNavigation: Expo RouterLanguage: TypeScriptIcons: @expo/vector-icons
+**Frontend**: React Native with Expo Router for file-based navigation.
+**Backend**: Supabase (PostgreSQL) for data persistence and Secure Auth.
+**Integration**: Real-time API interaction between the mobile client and the database.
+🛠 **Tech Stack** Frontend Framework: React Native / ExpoNavigation: Expo RouterLanguage: TypeScriptIcons: @expo/vector-icons
 Backend & DatabaseBaaS: SupabaseDatabase: PostgreSQLAuthentication: Supabase AuthClient Library: @supabase/supabase-js
 
-✨ Features:
+✨ **Features**:
 🔐 Secure Auth: User registration and login via Supabase.
 📖 Menu Browsing: Dynamic fetching of food items from the database.
 🛒 Cart Management: Add items, adjust quantities ($+$ / $-$), and view real-time totals.
 💾 Persistence: Cart data is stored in PostgreSQL, allowing for cross-device consistency.
 📱 Cross-Platform: Ready for iOS, Android, and Web via Expo.
-📂 Project Structure
+
+
+
+📂 **Project** Structure
 ├── app/                 # Expo Router File-based Navigation
 │   ├── index.tsx        # Main entry screen
 │   ├── login.tsx        # User login
@@ -26,8 +29,10 @@ Backend & DatabaseBaaS: SupabaseDatabase: PostgreSQLAuthentication: Supabase Aut
 ├── assets/              # Images and static files
 ├── package.json
 └── README.md
-⚙️ Installation & Setup:
-Clone & Install   Bashgit clone <repo-url>
+
+
+**⚙️ Installation & Setup:
+** Clone & Install   Bashgit clone <repo-url>
 cd frontend
 npm install
 2. Configure Supabase:
@@ -40,7 +45,7 @@ const supabaseUrl = "YOUR_SUPABASE_URL";
 const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
 
 
-3. Launch:
+3. **Launch**:
    npm run web or npm run android (with android emulator)
 
-Author: YesKing ICE Capstone Project
+**Author**: YesKing ICE Capstone Project
