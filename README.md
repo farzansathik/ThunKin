@@ -1,253 +1,46 @@
-Thunkin – Food Ordering Mobile App
-Overview
+🍔 Thunkin – Food Ordering Mobile AppThunkin is a full-stack mobile food ordering application built with React Native (Expo) and Supabase.
+It provides a seamless experience for browsing menus, managing a real-time cart, and handling user authentication through a PostgreSQL backend.
+🚀 Overview : This project demonstrates a robust mobile architecture, bridging a modern frontend with a powerful Backend-as-a-Service (BaaS).
 
-Thunkin is a mobile food ordering application built using React Native (Expo) and Supabase.
-The app allows users to browse restaurant menus, add food items to a cart, and proceed to checkout.
+Frontend: React Native with Expo Router for file-based navigation.
+Backend: Supabase (PostgreSQL) for data persistence and Secure Auth.
+Integration: Real-time API interaction between the mobile client and the database.
+🛠 Tech StackFrontend Framework: React Native / ExpoNavigation: Expo RouterLanguage: TypeScriptIcons: @expo/vector-icons
+Backend & DatabaseBaaS: SupabaseDatabase: PostgreSQLAuthentication: Supabase AuthClient Library: @supabase/supabase-js
 
-This project demonstrates a full-stack mobile architecture including:
-
-Frontend: React Native + Expo Router
-
-Backend: Supabase (PostgreSQL + Auth)
-
-Database relations (menus, cart, users)
-
-API integration between frontend and database
-
-Tech Stack
-
-Frontend
-
-React Native
-
-Expo
-
-Expo Router
-
-TypeScript
-
-Backend / Database
-
-Supabase
-
-PostgreSQL
-
-Supabase Auth
-
-Libraries
-
-@supabase/supabase-js
-
-@expo/vector-icons
-
-Project Features
-
-User authentication (Supabase Auth)
-
-Restaurant menu browsing
-
-Add items to cart
-
-Quantity adjustment (+ / -)
-
-Cart screen with total price
-
-Checkout button
-
-Database persistence using Supabase
-
-Project Structure
-frontend
-│
-├── app
-│   ├── login.tsx
-│   ├── register.tsx
-│   ├── restaurant.tsx
-│   ├── cart.tsx
-│   ├── index.tsx
-│
-├── lib
-│   └── supabase.ts
-│
-├── assets
-│
+✨ Features:
+🔐 Secure Auth: User registration and login via Supabase.
+📖 Menu Browsing: Dynamic fetching of food items from the database.
+🛒 Cart Management: Add items, adjust quantities ($+$ / $-$), and view real-time totals.
+💾 Persistence: Cart data is stored in PostgreSQL, allowing for cross-device consistency.
+📱 Cross-Platform: Ready for iOS, Android, and Web via Expo.
+📂 Project Structure
+├── app/                 # Expo Router File-based Navigation
+│   ├── index.tsx        # Main entry screen
+│   ├── login.tsx        # User login
+│   ├── register.tsx     # User registration
+│   ├── restaurant.tsx   # Menu browsing & Add to cart
+│   └── cart.tsx         # Cart overview & checkout logic
+├── lib/
+│   └── supabase.ts      # Supabase client configuration
+├── assets/              # Images and static files
 ├── package.json
 └── README.md
+⚙️ Installation & Setup:
+Clone & Install   Bashgit clone <repo-url>
+cd frontend
+npm install
+2. Configure Supabase:
+Create a project at Supabase.com.
 
-Explanation:
+Run the SQL provided in the "Setup Database Tables" section in your Supabase SQL Editor.
 
-app/
-
-Contains all screens/pages in the application.
-
-login.tsx → user login screen
-
-register.tsx → user registration
-
-restaurant.tsx → restaurant menu + add to cart
-
-cart.tsx → cart page showing selected items
-
-index.tsx → main entry screen
-
-lib/supabase.ts
-
-Contains the Supabase client configuration used across the app.
-
-Example:
-
-import { createClient } from "@supabase/supabase-js";
-
+Update lib/supabase.ts with your credentials:
 const supabaseUrl = "YOUR_SUPABASE_URL";
 const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
-Database Structure
 
-The project uses Supabase PostgreSQL.
+3. Launch:
+   npm run web or npm run android (with android emulator)
 
-Tables
-users
-column	type
-id	int
-auth_id	uuid
-
-This table maps the Supabase Auth user to an internal user ID.
-
-menu
-column	type
-id	int
-name	text
-price	int
-rest_id	int
-status	text
-
-Stores available menu items.
-
-cart
-column	type
-id	int
-user_id	int
-menu_id	int
-quantity	int
-note	text
-
-Stores items added to a user's cart.
-
-Installation Guide
-1. Clone the Repository
-git clone <repo-url>
-cd frontend
-2. Install Dependencies
-npm install
-
-or
-
-yarn install
-3. Setup Supabase
-
-Create a project at:
-
-https://supabase.com
-
-Then copy:
-
-Project URL
-Anon Public Key
-
-Paste them into:
-
-lib/supabase.ts
-4. Setup Database Tables
-
-Create the following tables in Supabase:
-
-users
-
-menu
-
-cart
-
-Make sure the following foreign keys exist:
-
-cart.menu_id → menu.id
-cart.user_id → users.id
-5. Run the Application
-
-Start Expo:
-
-npx expo start
-
-You can open the app using:
-
-Expo Go (mobile)
-
-Android emulator
-
-iOS simulator
-
-Web browser
-
-Application Flow
-
-User journey in the application:
-
-Login / Register
-        ↓
-Restaurant Menu
-        ↓
-Add Food to Cart
-        ↓
-Cart Page
-        ↓
-Checkout
-Example Workflow
-
-User logs in
-
-User opens restaurant menu
-
-User presses + to add food
-
-Item is inserted into cart table
-
-Cart screen shows items and total price
-
-User proceeds to checkout
-
-Key Learning Objectives
-
-This project demonstrates:
-
-Mobile app development using React Native
-
-Backend integration using Supabase
-
-Database relationships
-
-Cart management logic
-
-API interaction
-
-Full-stack application architecture
-
-Future Improvements
-
-Possible features to extend this project:
-
-Order system
-
-Payment integration
-
-Multiple restaurants
-
-Order history
-
-Push notifications
-
-Admin dashboard
-
-Author
-YesKing
-Information and Communication Engineering
-Chulalongkorn University
+Author: YesKing ICE Capstone Project
