@@ -12,16 +12,35 @@ type TimeSlotCardProps = {
   isActive?: boolean;
 };
 
-export default function TimeSlotCard({ time, items }: TimeSlotCardProps) {
+export default function TimeSlotCard({
+  time,
+  items,
+  isActive = false, // default false
+}: TimeSlotCardProps) {
   return (
     <View style={styles.columnWrapper}>
-      {/* Time label above the card */}       
-      <Typography fontType={3} weight="bold" size={25} color="#414040" style={styles.timeLabel}>
-        {time}
-      </Typography>
+      {/* Time + active line */}
+      <View style={styles.timeRow}>
+        <Typography
+          fontType={3}
+          weight="bold"
+          size={25}
+          color={isActive ? "#E15284" : "#414040"} // ✅ highlight when active
+          style={styles.timeLabel}
+        >
+          {time}
+        </Typography>
 
-      {/* Fixed-height white card with internal scroll */}
-      <View style={styles.column}>
+        <View
+            style={[
+                styles.line,
+                isActive ? styles.activeLine : styles.inactiveLine,
+            ]}
+        />
+      </View>
+
+      {/* Card */}
+      <View style={[styles.column, isActive && styles.activeColumn]}>
         <ScrollView
           style={styles.itemScroll}
           showsVerticalScrollIndicator={false}
@@ -61,11 +80,33 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
 
+  // row for time + line
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
   timeLabel: {
     marginTop: 10,
     marginBottom: 10,
     marginLeft: 4,
   },
+
+  // pink line
+  line: {
+    flex: 0.95,
+    height: 4,
+    borderRadius: 2,
+  },
+
+  activeLine: {
+    backgroundColor: "#E15284",
+  },
+
+  inactiveLine: {
+    backgroundColor: "#41404073", 
+},
 
   column: {
     flex: 1,
@@ -74,6 +115,25 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     padding: 10,
   },
+
+  // glow effect when active
+    activeColumn: {
+    // iOS shadow (stronger)
+    shadowColor: "#E15284",
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    shadowOffset: {
+        width: 0,
+        height: 0,
+    },
+
+    // Android glow 
+    elevation: 10,
+
+    // slight border to enhance glow effect
+    borderWidth: 1.5,
+    borderColor: "#F472B6",
+    },
 
   itemScroll: {
     flex: 1,

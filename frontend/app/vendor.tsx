@@ -13,6 +13,7 @@ import TimeSlotCard, { FoodItem } from "@/components/vendor_components/Timeslotc
 type Column = {
   time: string;
   items: FoodItem[];
+  isActive?: boolean; 
 };
 
 export default function Vendor() {
@@ -36,6 +37,7 @@ export default function Vendor() {
         { name: "ข้าวเหนียวไก่", qty: 1 },
         { name: "ข้าวสวย", qty: 0 },
       ],
+      isActive: true, // ใช้สำหรับ mark ว่า column ไหนคือช่วงเวลาปัจจุบัน (รอ link กับ real time เเต่ตอนนี้ขอ hard code ไว้ก่อน)
     },
     {
       time: "09:40 - 09:50",
@@ -156,6 +158,7 @@ export default function Vendor() {
               key={index}
               time={col.time}
               items={col.items}
+              isActive={col.isActive}
             />
           ))}
         </ScrollView>
