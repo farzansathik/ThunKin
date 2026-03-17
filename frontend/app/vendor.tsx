@@ -8,19 +8,26 @@ import {
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack } from "expo-router";
 import Typography from "@/components/typography";
+import TimeSlotCard, { FoodItem } from "@/components/vendor_components/Timeslotcard";
+
+type Column = {
+  time: string;
+  items: FoodItem[];
+};
 
 export default function Vendor() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-
     return () => {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
     };
   }, []);
 
-  const columns = [
+  // ─── Replace this with ur real DB data later ───── (เวลาเมนูอาหารมาเยอะ สามารถ scroll ลงล่างได้)
+  // ตอนทำ sync กับเวลาจริง คิดว่าควรจะใส่กรอบเวลา highlight สีต่างหากอีกที เพื่อให้แยกออกจากกรอบเวลาอื่นๆ ได้ง่ายๆ จะได้รู้ว่าอยู่ในช่วงเวลาไหนอยู่
+  const columns: Column[] = [
     {
       time: "09:30 - 09:40",
       items: [
@@ -40,9 +47,26 @@ export default function Vendor() {
     },
     {
       time: "09:50 - 10:00",
-      items: [{ name: "ยำมาม่า", qty: 5 }],
+      items: [
+        { name: "ข้าวไข่ดาว", qty: 4 },
+        { name: "ข้าวไข่เจียว", qty: 3 },
+        { name: "ไก่ทอด", qty: 1 },
+      ],
     },
+    {
+      time: "10:00 - 10:10",
+      items: [], // in case no orders in this time slot, time slot will still show up but with empty card (เเต่สำหรับเวลาที่ผ่านมาเเล้วควรจะเอาออกเลย)
+    },
+    {
+      time: "10:10 - 10:20",
+      items: [
+        { name: "ข้าวเหนียวไก่ทอด", qty: 3 },
+        { name: "ข้าวเหนียวหมู", qty: 2 },
+        { name: "ข้าวเหนียวไก่", qty: 1 },
+      ],
+    }
   ];
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -51,8 +75,6 @@ export default function Vendor() {
       <View style={styles.container}>
         {/* Sidebar */}
         <View style={[styles.sidebar, !sidebarOpen && styles.sidebarClosed]}>
-
-          {/* Hamburger toggle button */}
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={() => setSidebarOpen(!sidebarOpen)}
@@ -64,34 +86,61 @@ export default function Vendor() {
 
           {sidebarOpen && (
             <>
-              <Typography weight="bold" size={28} color="#fff" style={styles.logo}>
-                Queue
-              </Typography>
+              <View style={styles.logoRow}>
+                <View style={styles.verticalLine} />
+                
+                <Typography weight="bold" size={36} color="#fff" style={styles.logo}>
+                  Queue
+                </Typography>
+              </View>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={18} color="#fff">
-                  Dashboard
-                </Typography>
+                <Typography weight="regular" size={20} color="#fff">Dashboard</Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={18} color="#fff">
-                  History
-                </Typography>
+                <Typography weight="regular" size={20} color="#fff">History</Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={18} color="#fff">
-                  Wallet
-                </Typography>
+                <Typography weight="regular" size={20} color="#fff">Wallet</Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={18} color="#fff">
-                  QR Reader
-                </Typography>
+                <Typography weight="regular" size={20} color="#fff">QR Reader</Typography>
               </TouchableOpacity>
             </>
+          )}
+
+          {/* Spacer to push profile to bottom */}
+          <View style={styles.spacer} />
+
+          {/* Bottom Profile */}
+          {sidebarOpen ? (
+            <View style={styles.profileRow}>
+              {/* Avatar circle */}
+              <View style={styles.avatar}>
+                <Typography weight="bold" size={16} color="#E15284">
+                  TD
+                </Typography>
+              </View>
+              <View style={styles.profileText}>
+                <Typography weight="bold" size={15} color="#fff">
+                  Thanatat_D  {/* change to real name for log in later (อย่าลืมเปลี่ยนตัวย่อโปรไฟล์สองจุดด้วย) */}
+                </Typography>
+                <Typography weight="regular" size={12} color="rgba(255,255,255,0.7)">
+                  Vendor
+                </Typography>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.avatarOnly}>
+              <View style={styles.avatar}>
+                <Typography weight="bold" size={14} color="#E15284">
+                  TD
+                </Typography>
+              </View>
+            </View>
           )}
         </View>
 
@@ -99,37 +148,15 @@ export default function Vendor() {
         <ScrollView
           horizontal
           style={styles.main}
+          contentContainerStyle={styles.mainContent}
           showsHorizontalScrollIndicator={false}
         >
           {columns.map((col, index) => (
-            <View key={index} style={styles.column}>
-              <View style={styles.columnHeader}>
-                <Typography fontType={3} weight="bold" size={20}>
-                  {col.time}
-                </Typography>
-              </View>
-
-              <View style={styles.cardContainer}>
-                {col.items.map((item, i) => (
-                  <View key={i} style={styles.card}>
-                    <Typography weight="medium" size={18} style={styles.food}>
-                      {item.name}
-                    </Typography>
-
-                    <View
-                      style={[
-                        styles.qtyBox,
-                        item.qty === 0 ? styles.gray : styles.green,
-                      ]}
-                    >
-                      <Typography weight="bold" size={20}>
-                        {item.qty}
-                      </Typography>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
+            <TimeSlotCard
+              key={index}
+              time={col.time}
+              items={col.items}
+            />
           ))}
         </ScrollView>
       </View>
@@ -141,111 +168,102 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "row",
+    backgroundColor: "#eaecf0",
   },
 
   sidebar: {
-    width: 180,
+    width: 210,
     backgroundColor: "#E15284",
-    paddingTop: 40,
+    paddingTop: 36,
     paddingHorizontal: 20,
   },
 
   sidebarClosed: {
-    width: 52,
+    width: 60,
     paddingHorizontal: 8,
   },
 
   toggleButton: {
-    width: 36,
-    height: 36,
-    marginBottom: 8,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
   },
 
   dash: {
-    width: 18,
-    height: 2,
+    width: 20,
+    height: 2.5,
     backgroundColor: "#fff",
     borderRadius: 2,
   },
 
   logo: {
-    fontSize: 28,
-    color: "white",
-    fontWeight: "bold",
-    marginBottom: 40,
     marginTop: 16,
+    marginBottom: 20,
+  },
+
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  verticalLine: {
+    width: 4,
+    height: 32,
+    backgroundColor: "#fff",
+    borderRadius: 2,
   },
 
   menuItem: {
-    paddingVertical: 14,
-  },
-
-  menuText: {
-    color: "white",
-    fontSize: 18,
+    paddingVertical: 16,
   },
 
   main: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#eaecf0",
   },
 
-  column: {
-    width: 300,
-    borderRightWidth: 1,
-    borderColor: "#ddd",
-  },
-
-  columnHeader: {
+  mainContent: {
     padding: 20,
-    backgroundColor: "#eee",
-    alignItems: "center",
-  },
-
-  columnTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  cardContainer: {
-    padding: 10,
-  },
-
-  card: {
     flexDirection: "row",
-    backgroundColor: "white",
-    borderRadius: 12,
-    marginBottom: 10,
-    overflow: "hidden",
+    alignItems: "flex-start",
   },
 
-  food: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
+  spacer: {
+    flex: 0.9,
   },
 
-  qtyBox: {
-    width: 50,
+  // Profile section at the bottom
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.25)",
+  },
+ 
+  avatarOnly: {
+    alignItems: "center",
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.25)",
+  },
+ 
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
   },
-
-  qty: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-
-  green: {
-    backgroundColor: "#86EFAC",
-  },
-
-  gray: {
-    backgroundColor: "#d1d5db",
+ 
+  profileText: {
+    flex: 1,
   },
 });

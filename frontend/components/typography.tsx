@@ -57,7 +57,7 @@ function getFont(weight: Weight, isThai: boolean, fontType?: FontType) {
   // user override
   if (fontType === 1) return `Inter-${w}`;
   if (fontType === 2) return `NotoSansThai-${w}`;
-  if (fontType === 3) return `InriaSans-${w}`;
+  if (fontType === 3) return `Inria-${w}`; 
 
   // default behavior
   if (isThai) {
