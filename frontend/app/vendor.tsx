@@ -4,11 +4,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
 } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack } from "expo-router";
 import Typography from "@/components/typography";
-import TimeSlotCard, { FoodItem } from "@/components/vendor_components/Timeslotcard";
+import TimeSlotCard, { FoodItem } from "@/components/vendor_components/TimeSlotCard";  // น่าจะ bugged อย่าไปปรับเป็น non capital letter ตาม suggest เพราะมันจะหาย error เเต่โค้ดมันจะไม่เรียก script นั้น
+import ShelfBottomSheet from "@/components/vendor_components/ShelfBottomSheet";
+import AvailableSpaceButton from "@/components/vendor_components/AvailableSpaceButton";
 
 type Column = {
   time: string;
@@ -18,6 +21,7 @@ type Column = {
 
 export default function Vendor() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [shelfBottomSheetOpen, setShelfBottomSheetOpen] = useState(false);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -162,6 +166,15 @@ export default function Vendor() {
             />
           ))}
         </ScrollView>
+
+        {/* Available Space Button - Bottom Right */}
+        <AvailableSpaceButton onPress={() => setShelfBottomSheetOpen(true)} />
+ 
+        {/* Shelf Bottom Sheet */}
+        <ShelfBottomSheet
+          isVisible={shelfBottomSheetOpen}
+          onClose={() => setShelfBottomSheetOpen(false)}
+        />
       </View>
     </>
   );
@@ -268,5 +281,44 @@ const styles = StyleSheet.create({
  
   profileText: {
     flex: 1,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalContent: {
+    width: "90%",
+    height: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    overflow: "hidden",
+    flexDirection: "column",
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+
+  closeButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  gridScrollView: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
   },
 });

@@ -75,9 +75,10 @@ export default function TimeSlotCard({
 
 const styles = StyleSheet.create({
   columnWrapper: {
-    width: 360,
+    width: 320,
     marginRight: 16,
     alignSelf: "stretch",
+    marginBottom: 15,
   },
 
   // row for time + line
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
   },
 
   // glow effect when active
-    activeColumn: {
+  activeColumn: {
     // iOS shadow (stronger)
     shadowColor: "#E15284",
     shadowOpacity: 0.6,
@@ -135,8 +136,8 @@ const styles = StyleSheet.create({
     borderColor: "#F472B6",
     },
 
-  itemScroll: {
-    flex: 1,
+    itemScroll: {
+      flex: 1,
   },
 
   card: {
