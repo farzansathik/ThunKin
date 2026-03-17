@@ -92,18 +92,18 @@ Run your database setup SQL
 
 Then update:
 
-// lib/supabase.ts
+lib/supabase.ts
 
+```
 const supabaseUrl = "YOUR_SUPABASE_URL";
 const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
+
+```
 3️⃣ Run the App
+```
 npm run web       # Run in browser
 npm run android   # Run on Android emulator
-📸 Screenshots (Optional)
-
-Add screenshots to make your project stand out:
-
-![Home Screen](./assets/home.png)
+```
 
 👨‍💻 Author
 YesKing
