@@ -1,15 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
 } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack } from "expo-router";
+import Typography from "@/components/typography";
 
 export default function Vendor() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
 
@@ -44,29 +46,53 @@ export default function Vendor() {
 
   return (
     <>
-      {/* This removes the white header */}
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={styles.container}>
         {/* Sidebar */}
-        <View style={styles.sidebar}>
-          <Text style={styles.logo}>Queue</Text>
+        <View style={[styles.sidebar, !sidebarOpen && styles.sidebarClosed]}>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>Dashboard</Text>
+          {/* Hamburger toggle button */}
+          <TouchableOpacity
+            style={styles.toggleButton}
+            onPress={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <View style={styles.dash} />
+            <View style={styles.dash} />
+            <View style={styles.dash} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>History</Text>
-          </TouchableOpacity>
+          {sidebarOpen && (
+            <>
+              <Typography weight="bold" size={28} color="#fff" style={styles.logo}>
+                Queue
+              </Typography>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>Wallet</Text>
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.menuItem}>
+                <Typography weight="regular" size={18} color="#fff">
+                  Dashboard
+                </Typography>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>QR Reader</Text>
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.menuItem}>
+                <Typography weight="regular" size={18} color="#fff">
+                  History
+                </Typography>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Typography weight="regular" size={18} color="#fff">
+                  Wallet
+                </Typography>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Typography weight="regular" size={18} color="#fff">
+                  QR Reader
+                </Typography>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Main Dashboard */}
@@ -78,13 +104,17 @@ export default function Vendor() {
           {columns.map((col, index) => (
             <View key={index} style={styles.column}>
               <View style={styles.columnHeader}>
-                <Text style={styles.columnTitle}>{col.time}</Text>
+                <Typography fontType={3} weight="bold" size={20}>
+                  {col.time}
+                </Typography>
               </View>
 
               <View style={styles.cardContainer}>
                 {col.items.map((item, i) => (
                   <View key={i} style={styles.card}>
-                    <Text style={styles.food}>{item.name}</Text>
+                    <Typography weight="medium" size={18} style={styles.food}>
+                      {item.name}
+                    </Typography>
 
                     <View
                       style={[
@@ -92,7 +122,9 @@ export default function Vendor() {
                         item.qty === 0 ? styles.gray : styles.green,
                       ]}
                     >
-                      <Text style={styles.qty}>{item.qty}</Text>
+                      <Typography weight="bold" size={20}>
+                        {item.qty}
+                      </Typography>
                     </View>
                   </View>
                 ))}
@@ -104,6 +136,7 @@ export default function Vendor() {
     </>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -117,11 +150,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  sidebarClosed: {
+    width: 52,
+    paddingHorizontal: 8,
+  },
+
+  toggleButton: {
+    width: 36,
+    height: 36,
+    marginBottom: 8,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  dash: {
+    width: 18,
+    height: 2,
+    backgroundColor: "#fff",
+    borderRadius: 2,
+  },
+
   logo: {
     fontSize: 28,
     color: "white",
     fontWeight: "bold",
     marginBottom: 40,
+    marginTop: 16,
   },
 
   menuItem: {
