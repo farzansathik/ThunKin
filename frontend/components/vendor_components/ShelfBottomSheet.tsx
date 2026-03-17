@@ -16,7 +16,7 @@ interface ShelfBottomSheetProps {
 const ROWS = 4;
 const COLS = 4;
 const BUTTON_SIZE = 70;
-const PANEL_SIZE = 400;
+const PANEL_SIZE = 390;
 
 const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
   isVisible,
@@ -42,7 +42,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
       <View style={styles.panel} pointerEvents="box-none">
         {/* Header */}
         <View style={styles.header}>
-          <Typography weight="bold" size={18} color="#333">
+          <Typography weight="bold" size={20} color="#333">
             Shelf Space
           </Typography>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -115,9 +115,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#c2c2c2',
   },
   closeBtn: {
     width: 32,

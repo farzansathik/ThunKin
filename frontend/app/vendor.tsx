@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  Image 
 } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack } from "expo-router";
@@ -12,6 +13,9 @@ import Typography from "@/components/typography";
 import TimeSlotCard, { FoodItem } from "@/components/vendor_components/TimeSlotCard";  // น่าจะ bugged อย่าไปปรับเป็น non capital letter ตาม suggest เพราะมันจะหาย error เเต่โค้ดมันจะไม่เรียก script นั้น
 import ShelfBottomSheet from "@/components/vendor_components/ShelfBottomSheet";
 import AvailableSpaceButton from "@/components/vendor_components/AvailableSpaceButton";
+
+import { Alert } from "react-native";
+import { useRouter } from "expo-router";
 
 type Column = {
   time: string;
@@ -22,6 +26,22 @@ type Column = {
 export default function Vendor() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shelfBottomSheetOpen, setShelfBottomSheetOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: () => router.replace("/login"),
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -124,15 +144,18 @@ export default function Vendor() {
           {/* Bottom Profile */}
           {sidebarOpen ? (
             <View style={styles.profileRow}>
-              {/* Avatar circle */}
-              <View style={styles.avatar}>
-                <Typography weight="bold" size={16} color="#E15284">
-                  TD
-                </Typography>
-              </View>
+              {/* Avatar — tap to log out */}
+              <TouchableOpacity onPress={handleLogout}>
+                <View style={styles.avatar}>
+                  <Typography weight="bold" size={16} color="#E15284">
+                      TD {/* change to real initials for log in later */}
+                  </Typography>
+                </View>
+              </TouchableOpacity>
+
               <View style={styles.profileText}>
                 <Typography weight="bold" size={15} color="#fff">
-                  Thanatat_D  {/* change to real name for log in later (อย่าลืมเปลี่ยนตัวย่อโปรไฟล์สองจุดด้วย) */}
+                  Thanatat_D {/* change to real name for log in later (อย่าลืมเปลี่ยนตัวย่อโปรไฟล์สองจุดด้วย) */}
                 </Typography>
                 <Typography weight="regular" size={12} color="rgba(255,255,255,0.7)">
                   Vendor
@@ -141,11 +164,13 @@ export default function Vendor() {
             </View>
           ) : (
             <View style={styles.avatarOnly}>
-              <View style={styles.avatar}>
-                <Typography weight="bold" size={14} color="#E15284">
-                  TD
-                </Typography>
-              </View>
+              <TouchableOpacity onPress={handleLogout}>
+                <View style={styles.avatar}>
+                  <Typography weight="bold" size={14} color="#E15284">
+                    TD {/* change to real initials for log in later */}
+                  </Typography>
+                </View>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -271,6 +296,7 @@ const styles = StyleSheet.create({
   },
  
   avatar: {
+    paddingLeft: 4,
     width: 40,
     height: 40,
     borderRadius: 20,
