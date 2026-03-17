@@ -1,51 +1,112 @@
-🍔 **Thunkin** – Food Ordering Mobile AppThunkin is a full-stack mobile food ordering application built with React Native (Expo) and Supabase.
-It provides a seamless experience for browsing menus, managing a real-time cart, and handling user authentication through a PostgreSQL backend.
-🚀 **Overview** : This project demonstrates a robust mobile architecture, bridging a modern frontend with a powerful Backend-as-a-Service (BaaS).
+# 🍔 Thunkin – Food Ordering Mobile App
 
-**Frontend**: React Native with Expo Router for file-based navigation.
-**Backend**: Supabase (PostgreSQL) for data persistence and Secure Auth.
-**Integration**: Real-time API interaction between the mobile client and the database.
-🛠 **Tech Stack** Frontend Framework: React Native / ExpoNavigation: Expo RouterLanguage: TypeScriptIcons: @expo/vector-icons
-Backend & DatabaseBaaS: SupabaseDatabase: PostgreSQLAuthentication: Supabase AuthClient Library: @supabase/supabase-js
+**Thunkin** is a full-stack mobile food ordering application built with **React Native (Expo)** and **Supabase**.  
+It provides a seamless experience for browsing menus, managing a real-time cart, and handling secure user authentication.
 
-✨ **Features**:
-🔐 Secure Auth: User registration and login via Supabase.
-📖 Menu Browsing: Dynamic fetching of food items from the database.
-🛒 Cart Management: Add items, adjust quantities ($+$ / $-$), and view real-time totals.
-💾 Persistence: Cart data is stored in PostgreSQL, allowing for cross-device consistency.
-📱 Cross-Platform: Ready for iOS, Android, and Web via Expo.
+---
 
+## 🚀 Overview
 
+This project demonstrates a modern full-stack mobile architecture by connecting a responsive frontend with a Backend-as-a-Service (BaaS).
 
-📂 **Project** Structure
-├── app/                 # Expo Router File-based Navigation
-│   ├── index.tsx        # Main entry screen
-│   ├── login.tsx        # User login
-│   ├── register.tsx     # User registration
-│   ├── restaurant.tsx   # Menu browsing & Add to cart
-│   └── cart.tsx         # Cart overview & checkout logic
+- 📱 Smooth mobile experience with real-time updates  
+- 🔗 Direct integration between frontend and database  
+- 🔐 Built-in authentication and data persistence  
+
+---
+
+## 🛠 Tech Stack
+
+### **Frontend**
+- **Framework:** React Native (Expo)
+- **Navigation:** Expo Router (file-based routing)
+- **Language:** TypeScript
+- **Icons:** @expo/vector-icons
+
+### **Backend & Database**
+- **BaaS:** Supabase
+- **Database:** PostgreSQL
+- **Authentication:** Supabase Auth
+- **Client Library:** @supabase/supabase-js
+
+---
+
+## ✨ Features
+
+- 🔐 **Secure Authentication**  
+  User registration and login powered by Supabase Auth  
+
+- 📖 **Menu Browsing**  
+  Dynamically fetch food items from the database  
+
+- 🛒 **Cart Management**  
+  Add/remove items, adjust quantity (+ / −), and calculate totals in real-time  
+
+- 💾 **Persistent Storage**  
+  Cart data stored in PostgreSQL for cross-device consistency  
+
+- 📱 **Cross-Platform Support**  
+  Runs on iOS, Android, and Web via Expo  
+
+```
+## 📂 Project Structure
+├── app/ # Expo Router navigation
+│ ├── index.tsx # Home screen
+│ ├── login.tsx # Login screen
+│ ├── register.tsx # Registration screen
+│ ├── restaurant.tsx # Menu & add-to-cart
+│ └── cart.tsx # Cart & checkout
+│
 ├── lib/
-│   └── supabase.ts      # Supabase client configuration
-├── assets/              # Images and static files
+│ └── supabase.ts # Supabase client setup
+│
+├── assets/ # Images & static files
 ├── package.json
 └── README.md
+```
+
+## ⚙️ Installation & Setup
+
+### 1️⃣ Clone the Repository
 
 
-**⚙️ Installation & Setup:
-** Clone & Install   Bashgit clone <repo-url>
+---
+
+## ⚙️ Installation & Setup
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone <repo-url>
 cd frontend
 npm install
-2. Configure Supabase:
-Create a project at Supabase.com.
+```
 
-Run the SQL provided in the "Setup Database Tables" section in your Supabase SQL Editor.
+2️⃣ Configure Supabase
 
-Update lib/supabase.ts with your credentials:
+Create a project at https://supabase.com
+
+Open the SQL Editor
+
+Run your database setup SQL
+
+Then update:
+
+lib/supabase.ts
+
+```
 const supabaseUrl = "YOUR_SUPABASE_URL";
 const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
 
+```
+3️⃣ Run the App
+```
+npm run web       # Run in browser
+npm run android   # Run on Android emulator
+```
 
-3. **Launch**:
-   npm run web or npm run android (with android emulator)
+👨‍💻 Author: 
+YesKing
 
-**Author**: YesKing ICE Capstone Project
+ICE Capstone Project
+
