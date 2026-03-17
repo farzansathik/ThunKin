@@ -105,7 +105,8 @@ npm run web       # Run in browser
 npm run android   # Run on Android emulator
 ```
 
-👨‍💻 Author
+👨‍💻 Author: 
 YesKing
+
 ICE Capstone Project
 
