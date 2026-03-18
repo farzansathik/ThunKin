@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Image 
 } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack } from "expo-router";
@@ -119,6 +118,10 @@ export default function Vendor() {
                   Queue
                 </Typography>
               </View>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Typography weight="regular" size={20} color="#fff">Order Control</Typography>
+              </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
                 <Typography weight="regular" size={20} color="#fff">Dashboard</Typography>
