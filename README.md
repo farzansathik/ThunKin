@@ -1,4 +1,4 @@
-# 🍔 Thunkin – Food Ordering Mobile App
+# 🍔 Thunkin – Food Reservation Mobile App
 
 **Thunkin** is a full-stack mobile food ordering application built with **React Native (Expo)** and **Supabase**.  
 It provides a seamless experience for browsing menus, managing a real-time cart, and handling secure user authentication.
