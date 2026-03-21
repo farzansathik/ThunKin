@@ -1,190 +1,113 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   FlatList,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
 export default function ReserveScreen() {
   const router = useRouter();
-  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchRestaurants = async () => {
-    const { data, error } = await supabase.from("restaurant").select("*");
+  const fetchLocations = async () => {
+    const { data, error } = await supabase
+      .from("restaurant")
+      .select("location, status")
+      .order('location', { ascending: true });
 
-    if (error) {
-      console.log("Error fetching restaurants:", error);
-      return;
+    if (!error && data) {
+      const uniqueMap = new Map();
+      data.forEach(item => {
+        if (!uniqueMap.has(item.location)) uniqueMap.set(item.location, item);
+      });
+      setLocations(Array.from(uniqueMap.values()));
     }
-
-    setRestaurants(data || []);
+    setLoading(false);
   };
 
-  useEffect(() => {
-    fetchRestaurants();
-  }, []);
+  useEffect(() => { fetchLocations(); }, []);
+
+  const filteredData = locations.filter((item) =>
+    (item.location || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
+      <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={styles.title}>THUNKIN</Text>
-
-        {/* Search */}
+        <Text style={styles.brand}>THUNKIN</Text>
         <View style={styles.searchRow}>
-          <Ionicons name="search" size={18} color="#999" />
-          <TextInput placeholder="Search canteens" style={styles.searchInput} />
-          <Ionicons name="heart-outline" size={20} color="#E95D91" />
-        </View>
-
-        {/* Toggle */}
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleText}>List</Text>
-          <Switch thumbColor="#fff" trackColor={{ true: "#E95D91" }} />
-          <Ionicons name="map-outline" size={18} color="#fff" />
+          <View style={styles.searchBar}>
+            <Ionicons name="search-outline" size={20} color="#999" />
+            <TextInput
+              placeholder="Search locations"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
         </View>
       </View>
 
-      {/* LIST */}
-      <FlatList
-        data={restaurants}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ padding: 20 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() =>
-              router.push({
+      {loading ? (
+        <ActivityIndicator size="large" color="#E95D91" style={{marginTop: 50}} />
+      ) : (
+        <FlatList
+          data={filteredData}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push({
                 pathname: "/restaurant",
-                params: {
-                  restId: item.id,
-                  restName: item.name,
-                },
-              })
-            }
-          >
-            <View style={styles.cardLeft}>
-              <View style={styles.logoCircle}>
-                <Ionicons name="restaurant" size={22} color="#E95D91" />
+                params: { filterLocation: item.location },
+              })}
+            >
+              <View style={styles.cardInfo}>
+                <Text style={styles.locationTitle}>{item.location}</Text>
+                <Text style={styles.subText}>Chulalongkorn University</Text>
+                <View style={[styles.statusPill, { backgroundColor: item.status === 'open' ? "#D1FAE5" : "#FEE2E2" }]}>
+                  <Text style={{ color: item.status === 'open' ? "#10B981" : "#EF4444", fontSize: 10, fontWeight: 'bold' }}>
+                    {item.status?.toUpperCase() || "CLOSED"}
+                  </Text>
+                </View>
               </View>
-
-              <View>
-                <Text style={styles.cardTitle}>{item.name}</Text>
-
-                <Text style={styles.cardTime}>
-                  {item.status === "open" ? "OPEN" : "CLOSED"}
-                </Text>
+              <View style={styles.distanceBox}>
+                <Text style={styles.distNum}>5</Text>
+                <Text style={styles.minLabel}>min</Text>
               </View>
-            </View>
-
-            <View style={styles.distance}>
-              <Ionicons name="walk-outline" size={14} color="#E95D91" />
-              <Text style={styles.distText}>5 min</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F4F4" },
-
-  header: {
-    backgroundColor: "#E95D91",
-    padding: 20,
-    paddingTop: 55,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-  },
-
-  title: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 15,
-  },
-
-  searchRow: {
-    backgroundColor: "#fff",
-    borderRadius: 25,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-  },
-
-  searchInput: {
-    flex: 1,
-    marginHorizontal: 10,
-  },
-
-  toggleRow: {
-    marginTop: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-
-  toggleText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    elevation: 3,
-  },
-
-  cardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  logoCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#FFF0F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  cardTime: {
-    fontSize: 12,
-    color: "green",
-    marginTop: 3,
-  },
-
-  distance: {
-    alignItems: "center",
-  },
-
-  distText: {
-    fontSize: 12,
-    color: "#E95D91",
-    fontWeight: "700",
-    marginTop: 2,
-  },
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  header: { backgroundColor: "#E95D91", paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
+  brand: { color: "#fff", fontSize: 34, fontWeight: "900", marginBottom: 20 },
+  searchRow: { flexDirection: "row", alignItems: "center" },
+  searchBar: { flex: 1, backgroundColor: "white", borderRadius: 30, height: 48, flexDirection: "row", alignItems: "center", paddingHorizontal: 15 },
+  searchInput: { flex: 1, marginLeft: 8 },
+  listContent: { padding: 18, paddingBottom: 100 },
+  card: { backgroundColor: "white", borderRadius: 22, padding: 18, flexDirection: "row", marginBottom: 16, elevation: 3 },
+  cardInfo: { flex: 1 },
+  locationTitle: { fontSize: 18, fontWeight: "800" },
+  subText: { fontSize: 14, color: "#E95D91", marginBottom: 8 },
+  statusPill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10 },
+  distanceBox: { width: 65, height: 65, backgroundColor: "#FDFDFD", borderRadius: 15, borderWidth: 1, borderColor: "#EEE", alignItems: "center", justifyContent: "center" },
+  distNum: { fontSize: 20, fontWeight: "bold", color: "#E95D91" },
+  minLabel: { fontSize: 10, fontWeight: "bold" },
 });

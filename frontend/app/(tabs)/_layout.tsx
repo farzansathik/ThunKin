@@ -13,6 +13,7 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
+      {/* 1. HOME */}
       <Tabs.Screen
         name="index"
         options={{
@@ -23,6 +24,7 @@ export default function TabLayout() {
         }}
       />
 
+      {/* 2. WALLET */}
       <Tabs.Screen
         name="wallet"
         options={{
@@ -33,6 +35,7 @@ export default function TabLayout() {
         }}
       />
 
+      {/* 3. RESERVE (Center Floating Button) */}
       <Tabs.Screen
         name="reserve"
         options={{
@@ -46,6 +49,7 @@ export default function TabLayout() {
         }}
       />
 
+      {/* 4. PURCHASED (Points to your history file) */}
       <Tabs.Screen
         name="history"
         options={{
@@ -56,6 +60,7 @@ export default function TabLayout() {
         }}
       />
 
+      {/* 5. PROFILE */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -63,6 +68,30 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size ?? 26} color={color} />
           ),
+        }}
+      />
+
+      {/* --- HIDDEN SCREENS --- */}
+      {/* These will NOT show in the footer but can still be navigated to via router.push */}
+      
+      <Tabs.Screen
+        name="restaurant"
+        options={{
+          href: null, // This hides it from the footer
+        }}
+      />
+
+      <Tabs.Screen
+        name="timeslot"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="menu"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
@@ -77,7 +106,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -30,
+    marginTop: -30, // Lifts the button above the bar
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -93,7 +122,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    position: "absolute",
+    position: "absolute", // Makes it float so we can round the corners
     elevation: 0,
   },
   tabLabel: {

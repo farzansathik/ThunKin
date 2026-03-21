@@ -93,7 +93,7 @@ const handleAuth = async () => {
       {/* Brand */}
       <View style={styles.header}>
         <Text style={styles.brand}>THUNKIN</Text>
-        <Text style={styles.subtitle}>Food Reservation Platform</Text>
+        <Text style={styles.subtitle}>Login to reserve your favorite meals</Text>
       </View>
 
       {/* Card */}

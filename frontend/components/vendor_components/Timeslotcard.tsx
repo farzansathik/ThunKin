@@ -9,7 +9,7 @@ export type FoodItem = {
 type TimeSlotCardProps = {
   time: string;
   items: FoodItem[];
-  isActive?: boolean;
+  isActive?: boolean;  // 
 };
 
 export default function TimeSlotCard({

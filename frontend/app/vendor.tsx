@@ -9,8 +9,8 @@ import {
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack } from "expo-router";
 import Typography from "@/components/typography";
-import TimeSlotCard, { FoodItem } from "@/components/vendor_components/TimeSlotCard";  // น่าจะ bugged อย่าไปปรับเป็น non capital letter ตาม suggest เพราะมันจะหาย error เเต่โค้ดมันจะไม่เรียก script นั้น
-import ShelfBottomSheet from "@/components/vendor_components/ShelfBottomSheet";
+import TimeSlotCard, { FoodItem } from "@/components/vendor_components/Timeslotcard";  // น่าจะ bugged อย่าไปปรับเป็น non capital letter ตาม suggest เพราะมันจะหาย error เเต่โค้ดมันจะไม่เรียก script นั้น
+import ShelfBottomSheet from "@/components/vendor_components/ShelfBottomSheet";      
 import AvailableSpaceButton from "@/components/vendor_components/AvailableSpaceButton";
 
 import { Alert } from "react-native";
@@ -69,6 +69,7 @@ export default function Vendor() {
         { name: "ข้าวไข่เจียว", qty: 3 },
         { name: "ไก่ทอด", qty: 1 },
       ],
+      isActive: true,
     },
     {
       time: "09:50 - 10:00",

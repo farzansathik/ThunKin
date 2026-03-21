@@ -3,7 +3,7 @@ import { Text, StyleSheet, TextProps } from "react-native";
 
 type Weight = "regular" | "medium" | "semibold" | "bold";
 type FontType = 1 | 2 | 3; // 1=Inter, 2=NotoSansThai, 3=InriaSans
-
+//  Custom Font for our app
 interface TypographyProps extends TextProps {
   weight?: Weight;
   size?: number;
