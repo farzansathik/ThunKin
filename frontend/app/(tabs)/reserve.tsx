@@ -17,6 +17,8 @@ import Octicons from '@expo/vector-icons/Octicons';
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 
+import CafeteriaSelectCard from "../../components/user_components/CafeteriaSelectCard";
+
 export default function ReserveScreen() {
   const router = useRouter();
   const [locations, setLocations] = useState<any[]>([]);
@@ -95,7 +97,7 @@ export default function ReserveScreen() {
         </SafeAreaView>
       </View>
 
-      {/* CONTENT */}
+    {/* CONTENT */}
       {loading ? (
         <ActivityIndicator size="large" color="#E95D91" style={{ marginTop: 50 }} />
       ) : (
@@ -105,70 +107,17 @@ export default function ReserveScreen() {
             keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => {
-              const isOpen = item.status?.toLowerCase() === "open";
-              return (
-                <TouchableOpacity
-                  style={styles.card}
-                  activeOpacity={0.85}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/restaurant",
-                      params: { filterLocation: item.location },
-                    })
-                  }
-                >
-                  {/* Left: Info */}
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.locationTitle} numberOfLines={2}>
-                      {item.location}
-                    </Text>
-                    {item.sub_location ? (
-                      <Text style={styles.subLocationText} numberOfLines={1}>
-                        {item.sub_location}
-                      </Text>
-                    ) : null}
-
-                    <View style={styles.statusRow}>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: isOpen ? "#D1FAE5" : "#FEE2E2" },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusText,
-                            { color: isOpen ? "#10B981" : "#EF4444" },
-                          ]}
-                        >
-                          {isOpen ? "OPEN" : "CLOSED"}
-                        </Text>
-                      </View>
-                      <Text style={styles.timeText}>08:00 - 18:00</Text>
-                      <Ionicons
-                        name="heart-outline"
-                        size={18}
-                        color="#E95D91"
-                        style={{ marginLeft: 8 }}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Right: Distance Box */}
-                  <View style={styles.distanceContainer}>
-                    <View style={styles.distanceBox}>
-                      <View style={styles.distValueRow}>
-                        <Text style={styles.distNum}>5</Text>
-                        <MaterialCommunityIcons name="run" size={18} color="#E95D91" />
-                      </View>
-                      <Text style={styles.minLabel}>min</Text>
-                    </View>
-                    <Text style={styles.meterText}>12 meters</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            }}
+            renderItem={({ item }) => (
+              <CafeteriaSelectCard
+                item={item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/restaurant",
+                    params: { filterLocation: item.location },
+                  })
+                }
+              />
+            )}
           />
 
           {/* QUICK ORDER FLOATING BUTTON */}
