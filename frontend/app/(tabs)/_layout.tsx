@@ -1,14 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { Tabs } from "expo-router";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
+
+const ACTIVE_COLOR = "#FFFFFF";
+const INACTIVE_COLOR = "rgba(255,255,255,0.4)";
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#FFFFFF",
-        tabBarInactiveTintColor: "rgba(255, 255, 255, 0.5)",
+        tabBarActiveTintColor: ACTIVE_COLOR,
+        tabBarInactiveTintColor: INACTIVE_COLOR,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel,
       }}
@@ -18,8 +24,12 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size ?? 26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="home"
+              size={24}
+              color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+            />
           ),
         }}
       />
@@ -29,33 +39,54 @@ export default function TabLayout() {
         name="wallet"
         options={{
           title: "Wallet",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wallet" size={size ?? 26} color={color} />
+          tabBarItemStyle: styles.walletItem,
+          tabBarIcon: ({ focused }) => (
+            <FontAwesome6
+              name="wallet"
+              size={24}
+              color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+            />
           ),
         }}
       />
 
-      {/* 3. RESERVE (Center Floating Button) */}
+      {/* 3. RESERVE */}
       <Tabs.Screen
         name="reserve"
         options={{
-          title: "Reserve",
           tabBarIcon: ({ focused }) => (
-            <View style={styles.reserveButton}>
-              <Ionicons name="restaurant" size={28} color="#E95D91" />
+            <View style={styles.reserveRing}>
+              <View style={styles.reserveShadowWrapper}>
+                <View style={styles.reserveCircle}>
+                  <MaterialCommunityIcons
+                    name="silverware-fork-knife"
+                    size={39}
+                    color={focused ? "#DF5789" : "#CCCCCC"}
+                    style={{ marginLeft: -3 }}
+                  />
+                  <Text style={[styles.reserveLabel, { color: focused ? "#DF5789" : "#CCCCCC" }]}>
+                    Reserve
+                  </Text>
+                </View>
+              </View>
             </View>
           ),
           tabBarLabel: () => null,
         }}
       />
 
-      {/* 4. PURCHASED (Points to your history file) */}
+      {/* 4. PURCHASED */}
       <Tabs.Screen
         name="history"
         options={{
           title: "Purchased",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size ?? 26} color={color} />
+          tabBarItemStyle: styles.purchasedItem,
+          tabBarIcon: ({ focused }) => (
+            <FontAwesome5
+              name="history"
+              size={24}
+              color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+            />
           ),
         }}
       />
@@ -65,69 +96,84 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size ?? 26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="person"
+              size={24}
+              color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+            />
           ),
         }}
       />
 
-      {/* --- HIDDEN SCREENS --- */}
-      {/* These will NOT show in the footer but can still be navigated to via router.push */}
-      
-      <Tabs.Screen
-        name="restaurant"
-        options={{
-          href: null, // This hides it from the footer
-        }}
-      />
-
-      <Tabs.Screen
-        name="timeslot"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="menu"
-        options={{
-          href: null,
-        }}
-      />
+      {/* HIDDEN SCREENS */}
+      <Tabs.Screen name="restaurant" options={{ href: null }} />
+      <Tabs.Screen name="timeslot" options={{ href: null }} />
+      <Tabs.Screen name="menu" options={{ href: null }} />
     </Tabs>
   );
 }
 
-const styles = StyleSheet.create({
-  reserveButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: -30, // Lifts the button above the bar
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
+const CIRCLE_SIZE = 78;
 
+const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#E95D91",
+    backgroundColor: "#DF5789",
     borderTopWidth: 0,
-    height: Platform.OS === "ios" ? 90 : 75,
-    paddingBottom: Platform.OS === "ios" ? 30 : 15,
-    paddingTop: 10,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    position: "absolute", // Makes it float so we can round the corners
+    height: Platform.OS === "ios" ? 101 : 85,
+    paddingBottom: Platform.OS === "ios" ? 28 : 12,
+    paddingTop: Platform.OS === "ios" ? 8 : 6,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    position: "absolute",
     elevation: 0,
+    shadowOpacity: 0,
   },
   tabLabel: {
     fontSize: 11,
     fontWeight: "700",
-    marginTop: 4,
+    marginTop: 2,
+  },
+
+  walletItem: {
+    marginRight: 20,
+  },
+  purchasedItem: {
+    marginLeft: 20,
+  },
+
+  reserveRing: {
+    width: CIRCLE_SIZE + 16,
+    height: CIRCLE_SIZE + 16,
+    borderRadius: (CIRCLE_SIZE + 16) / 2,
+    backgroundColor: "#DF5789",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  reserveShadowWrapper: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    overflow: "visible",
+    elevation: 8,
+    backgroundColor: "#FFFFFF",
+  },
+  reserveCircle: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  reserveLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    marginTop: 1,
   },
 });
