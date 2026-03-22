@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
-// 1. Define the interfaces to fix TypeScript 'any' errors
 interface TimeSlot {
   time: string;
   startTime: Date;
@@ -34,15 +33,13 @@ export default function TimeSlotScreen() {
 
   const generateAndFetchSlots = async () => {
     setLoading(true);
-    
-    // Fetch confirmed orders to calculate real-time availability
     const { data: orders } = await supabase
       .from("orders")
       .select("pick_up_time")
       .eq("paid", true);
 
     const groups: HourGroup[] = [];
-    const hours = [11, 12, 13]; // Lunch hours
+    const hours = [11, 12, 13]; 
 
     hours.forEach((h) => {
       const slots: TimeSlot[] = [];
@@ -50,7 +47,6 @@ export default function TimeSlotScreen() {
         const start = new Date();
         start.setHours(h, m, 0, 0);
         
-        // Match orders to this specific 10-minute window
         const orderCount = orders?.filter(o => {
           const pickTime = new Date(o.pick_up_time);
           return pickTime.getTime() === start.getTime();
@@ -73,17 +69,26 @@ export default function TimeSlotScreen() {
     generateAndFetchSlots();
   }, [shopId]);
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/restaurant");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <View style={styles.shopBadge}><Text style={styles.shopBadgeText}>1</Text></View>
+          <View style={styles.shopBadge}>
+            <Text style={styles.shopBadgeText}>1</Text>
+          </View>
           <Text style={styles.headerTitle}>{shopName || "Restaurant"}</Text>
         </View>
         <Text style={styles.headerSubtitle}>06:00 - 16:45</Text>
@@ -92,7 +97,7 @@ export default function TimeSlotScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#E95D91" style={{ marginTop: 50 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.titleSection}>
             <View style={styles.pinkIndicator} />
             <Text style={styles.sectionTitle}>Select a time slot</Text>
@@ -102,7 +107,7 @@ export default function TimeSlotScreen() {
             <View key={group.hour} style={styles.hourSection}>
               <View style={styles.hourHeader}>
                 <Text style={styles.hourLabel}>{group.hour}</Text>
-                <div style={styles.hourLine} />
+                <View style={styles.hourLine} />
               </View>
               
               <View style={styles.slotsGrid}>
@@ -125,9 +130,11 @@ export default function TimeSlotScreen() {
                         <Text style={styles.availableLabel}>Available</Text>
                         <Text style={styles.availableNum}>{slot.available}</Text>
                       </View>
-                      <Text style={[styles.slotTimeText, { color: isFull ? "#999" : "#333" }]}>
-                        {slot.time}
-                      </Text>
+                      <View style={styles.timeTextContainer}>
+                        <Text style={[styles.slotTimeText, { color: isFull ? "#999" : "#333" }]}>
+                          {slot.time}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -142,40 +149,53 @@ export default function TimeSlotScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
-  header: { backgroundColor: "#E95D91", paddingTop: 50, paddingBottom: 20, alignItems: 'center' },
-  backButton: { position: 'absolute', left: 20, top: 55 },
+  header: { 
+    backgroundColor: "#E95D91", 
+    paddingTop: 50, 
+    paddingBottom: 20, 
+    alignItems: 'center',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  backButton: { position: 'absolute', left: 20, top: 55, padding: 5 },
   headerInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  shopBadge: { backgroundColor: 'white', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  shopBadge: { 
+    backgroundColor: 'white', 
+    width: 24, 
+    height: 24, 
+    borderRadius: 12, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 10 
+  },
   shopBadgeText: { color: '#E95D91', fontWeight: 'bold', fontSize: 12 },
   headerTitle: { color: 'white', fontSize: 20, fontWeight: 'bold' },
   headerSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
-  
   scrollContent: { padding: 20, paddingBottom: 100 },
   titleSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   pinkIndicator: { width: 4, height: 22, backgroundColor: '#E95D91', borderRadius: 2, marginRight: 10 },
   sectionTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  
   hourSection: { marginBottom: 25 },
   hourHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   hourLabel: { fontSize: 14, color: '#BBB', fontWeight: '600', width: 45 },
   hourLine: { flex: 1, height: 1, backgroundColor: '#EEE' },
-  
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   slotCard: { 
     width: '48%', 
     backgroundColor: 'white', 
-    borderRadius: 12, 
+    borderRadius: 15, 
     flexDirection: 'row', 
     alignItems: 'center', 
     marginBottom: 12, 
     borderWidth: 1, 
     borderColor: '#EEE', 
-    elevation: 2,
-    overflow: 'hidden'
+    elevation: 3,
+    overflow: 'hidden',
   },
   disabledCard: { backgroundColor: '#FAFAFA', opacity: 0.7 },
-  availableBadge: { paddingVertical: 8, paddingHorizontal: 6, alignItems: 'center', width: 55 },
-  availableLabel: { fontSize: 7, color: 'white', fontWeight: 'bold', textTransform: 'uppercase' },
+  availableBadge: { paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', width: 50 },
+  availableLabel: { fontSize: 7, color: 'white', fontWeight: '900', textTransform: 'uppercase' },
   availableNum: { fontSize: 18, color: 'white', fontWeight: 'bold' },
-  slotTimeText: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' }
+  timeTextContainer: { flex: 1, paddingRight: 8 },
+  slotTimeText: { textAlign: 'center', fontSize: 11, fontWeight: '700' }
 });

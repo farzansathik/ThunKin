@@ -37,11 +37,18 @@ export default function MenuScreen() {
     fetchMenu();
   }, [shopId]);
 
+  // Updated Navigation Handler
+  const handleBack = () => {
+    router.push({
+      pathname: "/timeslot",
+      params: { shopId, shopName } // Passing params back to ensure timeslot can reload
+    });
+  };
+
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={styles.menuCard}
       onPress={() => {
-        // Here you can navigate to an 'Order Confirm' or 'Add to Cart' modal
         console.log("Selected item:", item.name);
       }}
     >
@@ -64,8 +71,9 @@ export default function MenuScreen() {
           source={{ uri: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800' }} 
           style={styles.bannerImage} 
         />
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="caret-back" size={28} color="white" />
+        {/* Updated Button Style to match other pages */}
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -73,13 +81,13 @@ export default function MenuScreen() {
       <View style={styles.contentCard}>
         <View style={styles.shopTitleRow}>
           <View style={styles.pinkIndicator} />
-          <Text style={styles.shopName}>{shopName || "Restaurant Name"}</Text>
+          <Text style={styles.shopName} numberOfLines={1}>{shopName || "Restaurant Name"}</Text>
         </View>
 
         <Text style={styles.sectionTitle}>For You</Text>
 
         {loading ? (
-          <ActivityIndicator color="#E95D91" style={{ marginTop: 50 }} />
+          <ActivityIndicator color="#E95D91" size="large" style={{ marginTop: 50 }} />
         ) : (
           <FlatList
             data={menuItems}
@@ -102,11 +110,9 @@ const styles = StyleSheet.create({
   bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
   backButton: { 
     position: "absolute", 
-    top: 50, 
+    top: 55, // Adjusted to match header alignment
     left: 20, 
-    backgroundColor: "rgba(0,0,0,0.3)", 
-    borderRadius: 8,
-    padding: 4 
+    padding: 8 
   },
   contentCard: { 
     flex: 1, 
@@ -119,7 +125,7 @@ const styles = StyleSheet.create({
   },
   shopTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 25 },
   pinkIndicator: { width: 4, height: 28, backgroundColor: "#E95D91", borderRadius: 2, marginRight: 12 },
-  shopName: { fontSize: 28, fontWeight: "bold", color: "#333" },
+  shopName: { fontSize: 26, fontWeight: "900", color: "#333", flex: 1 },
   sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 20 },
   row: { justifyContent: "space-between" },
   menuCard: { 
@@ -129,9 +135,9 @@ const styles = StyleSheet.create({
   foodImage: { 
     width: "100%", 
     height: 160, 
-    borderRadius: 12, 
+    borderRadius: 20, // More rounded like the other cards
     backgroundColor: "#F5F5F5" 
   },
-  foodName: { fontSize: 16, fontWeight: "700", marginTop: 8, color: "#333" },
-  foodPrice: { fontSize: 14, color: "#666", marginTop: 2 },
+  foodName: { fontSize: 16, fontWeight: "800", marginTop: 8, color: "#333" },
+  foodPrice: { fontSize: 14, color: "#E95D91", fontWeight: "700", marginTop: 2 }, // Made price pink for contrast
 });
