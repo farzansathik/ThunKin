@@ -9,13 +9,13 @@ import {
   ActivityIndicator,
   StatusBar,
   SafeAreaView,
-  Dimensions,
+  Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import Octicons from '@expo/vector-icons/Octicons';
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
-
-const { width } = Dimensions.get("window");
 
 export default function ReserveScreen() {
   const router = useRouter();
@@ -51,46 +51,58 @@ export default function ReserveScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* --- HEADER SECTION --- */}
+      {/* HEADER */}
       <View style={styles.header}>
         <SafeAreaView>
+          {/* Decorative dish image — behind everything */}
+          <Image
+            source={require("../../assets/images/Thunkin_images/UserSide_img/dish_banner.png")}
+            style={styles.dishDecor}
+            resizeMode="contain"
+          />
+          {/* Brand Title Row */}
           <View style={styles.headerTop}>
-            <View style={styles.logoRow}>
-              <Text style={styles.brandText}>THUNKIN</Text>
-            </View>
+            <Image
+              source={require("../../assets/images/Thunkin_images/THUNKIN_logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
 
+          {/* Search Row */}
           <View style={styles.searchRow}>
             <View style={styles.searchBar}>
-              <Ionicons name="search-outline" size={20} color="#333" />
+              <Ionicons name="search-outline" size={20} color="#757575" />
               <TextInput
                 placeholder="Search"
+
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholderTextColor="#999"
+                placeholderTextColor="#757575"
               />
               <TouchableOpacity>
-                <Ionicons name="heart-outline" size={22} color="#333" />
+                <FontAwesome6 name="heart" size={18} color="#616161" />
               </TouchableOpacity>
             </View>
 
-            {/* Map Toggle Switch */}
+            {/* Map Toggle */}
             <TouchableOpacity style={styles.toggleTrack}>
               <View style={styles.toggleThumb} />
-              <Ionicons name="map-outline" size={14} color="#666" style={{ marginRight: 4 }} />
+              <Ionicons name="map-outline" size={14} color="#888" style={{ marginRight: 5 }} />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
       </View>
 
-      {/* --- CONTENT SECTION --- */}
+      {/* CONTENT */}
       {loading ? (
         <ActivityIndicator size="large" color="#E95D91" style={{ marginTop: 50 }} />
       ) : (
         <View style={{ flex: 1 }}>
           <FlatList
             data={filteredData}
+            keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => {
@@ -98,6 +110,7 @@ export default function ReserveScreen() {
               return (
                 <TouchableOpacity
                   style={styles.card}
+                  activeOpacity={0.85}
                   onPress={() =>
                     router.push({
                       pathname: "/restaurant",
@@ -105,10 +118,17 @@ export default function ReserveScreen() {
                     })
                   }
                 >
+                  {/* Left: Info */}
                   <View style={styles.cardInfo}>
-                    <Text style={styles.locationTitle} numberOfLines={1}>
+                    <Text style={styles.locationTitle} numberOfLines={2}>
                       {item.location}
                     </Text>
+                    {item.sub_location ? (
+                      <Text style={styles.subLocationText} numberOfLines={1}>
+                        {item.sub_location}
+                      </Text>
+                    ) : null}
+
                     <View style={styles.statusRow}>
                       <View
                         style={[
@@ -126,10 +146,16 @@ export default function ReserveScreen() {
                         </Text>
                       </View>
                       <Text style={styles.timeText}>08:00 - 18:00</Text>
-                      <Ionicons name="heart-outline" size={18} color="#E95D91" style={{ marginLeft: 8 }} />
+                      <Ionicons
+                        name="heart-outline"
+                        size={18}
+                        color="#E95D91"
+                        style={{ marginLeft: 8 }}
+                      />
                     </View>
                   </View>
 
+                  {/* Right: Distance Box */}
                   <View style={styles.distanceContainer}>
                     <View style={styles.distanceBox}>
                       <View style={styles.distValueRow}>
@@ -145,142 +171,249 @@ export default function ReserveScreen() {
             }}
           />
 
-          {/* QUICK ORDER BUTTON */}
-          <TouchableOpacity style={styles.quickOrderFloatingBtn}>
-            <Ionicons name="sparkles" size={20} color="#E95D91" />
+          {/* QUICK ORDER FLOATING BUTTON */}
+          <TouchableOpacity style={styles.quickOrderFloatingBtn} activeOpacity={0.85}>
+            <Octicons name="sparkles-fill" size={24} color="#DF5789" />
             <View style={styles.quickOrderPinkPill}>
-              <Text style={styles.quickOrderText}>QUICK ORDER</Text>
+              <Text style={styles.quickOrderText}>QUICK</Text>
+              <Text style={styles.quickOrderText}>ORDER</Text>
             </View>
           </TouchableOpacity>
         </View>
-      )}      
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F8F8" },
-  header: {
-    backgroundColor: "#E95D91",
-    paddingBottom: 20,
-    paddingHorizontal: 15,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+  container: {
+    flex: 1,
+    backgroundColor: "#EBEBEB",
   },
-  headerTop: { marginTop: 10, marginBottom: 15, alignItems: "center" },
-  logoRow: { flexDirection: "row", alignItems: "center" },
-  brandText: { color: "#FFF", fontSize: 32, fontWeight: "900", letterSpacing: 1 },
-  logoIcon: { marginHorizontal: -2, marginTop: 4 },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+
+  /* ── HEADER ── */
+  header: {
+    backgroundColor: "#DF5789",
+    paddingBottom: 22,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    height: 160,
+    overflow: "hidden", // clips dish image inside rounded header
+    elevation: 10,
+  },
+  headerTop: {
+    marginTop: 10,
+    marginBottom: -17,
+    alignItems: "flex-start",
+    paddingLeft: 0, // flush to left
+  },
+  logo: {
+    width: 200, 
+    height: 110,  
+  },
+  dishDecor: {
+    position: "absolute",
+    right: -63,
+    top: -12,
+    width: 230,
+    height: 230,
+    opacity: 0.12,
+    transform: [{ rotate: "-15deg" }],
+  },
+
+  /* ── SEARCH ROW ── */
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   searchBar: {
     flex: 1,
     backgroundColor: "#FFF",
     borderRadius: 25,
-    height: 44,
+    height: 33,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 15,
+    paddingHorizontal: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#333" },
+  searchInput: {
+    flex: 1,
+    marginLeft: 5,
+    fontSize: 15,
+    height: 33,
+    color: "#333",
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlignVertical: "center",
+    includeFontPadding: false,
+  },
   toggleTrack: {
     width: 50,
     height: 26,
     backgroundColor: "#D1D1D1",
-    borderRadius: 15,
+    borderRadius: 13,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 3,
     justifyContent: "space-between",
   },
-  toggleThumb: { width: 20, height: 20, backgroundColor: "#FFF", borderRadius: 10, elevation: 2 },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+  },
 
-  listContent: { padding: 15, paddingBottom: 160 },
+  /* ── LIST ── */
+  listContent: {
+    padding: 16,
+    paddingBottom: 170,
+  },
+
+  /* ── CARD ── */
   card: {
     backgroundColor: "#FFF",
     borderRadius: 20,
-    padding: 15,
+    padding: 16,
     flexDirection: "row",
-    marginBottom: 15,
-    elevation: 4,
+    alignItems: "center",
+    marginBottom: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.07,
     shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  cardInfo: { flex: 1 },
-  locationTitle: { fontSize: 18, fontWeight: "800", color: "#333" },
-  subLocationText: { fontSize: 14, color: "#E95D91", fontWeight: "600", marginBottom: 8 },
-  statusRow: { flexDirection: "row", alignItems: "center" },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 },
-  statusText: { fontSize: 10, fontWeight: "900" },
-  timeText: { fontSize: 12, color: "#999" },
+  cardInfo: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  locationTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#222",
+    marginBottom: 3,
+    lineHeight: 22,
+  },
+  subLocationText: {
+    fontSize: 13,
+    color: "#E95D91",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  timeText: {
+    fontSize: 12,
+    color: "#AAA",
+    fontWeight: "500",
+  },
 
-  distanceContainer: { alignItems: "center", justifyContent: "center", marginLeft: 10 },
-  distanceBox: {
-    width: 65,
-    height: 65,
-    backgroundColor: "#FFF",
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#EEE",
+  /* ── DISTANCE BOX ── */
+  distanceContainer: {
     alignItems: "center",
     justifyContent: "center",
-    elevation: 2,
   },
-  distValueRow: { flexDirection: "row", alignItems: "center" },
-  distNum: { fontSize: 22, fontWeight: "900", color: "#E95D91", marginRight: 2 },
-  minLabel: { fontSize: 11, fontWeight: "bold", color: "#333", marginTop: -4 },
-  meterText: { fontSize: 9, color: "#AAA", marginTop: 4 },
+  distanceBox: {
+    width: 62,
+    height: 62,
+    backgroundColor: "#FFF",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#F0F0F0",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  distValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  distNum: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#E95D91",
+    marginRight: 1,
+  },
+  minLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#555",
+    marginTop: -2,
+  },
+  meterText: {
+    fontSize: 9,
+    color: "#BBB",
+    marginTop: 5,
+    fontWeight: "500",
+  },
 
+  /* ── QUICK ORDER ── */
   quickOrderFloatingBtn: {
     position: "absolute",
-    bottom: 110,
-    right: 20,
+    bottom: 105,
+    right: 12,
+    width: 140,
+    height: 50,
     backgroundColor: "#FFF",
     flexDirection: "row",
     alignItems: "center",
     paddingLeft: 12,
-    paddingRight: 6,
-    paddingVertical: 6,
+    paddingRight: 5,
+    paddingVertical: 5,
     borderRadius: 30,
-    elevation: 10,
+
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   quickOrderPinkPill: {
     backgroundColor: "#E95D91",
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
     marginLeft: 8,
-  },
-  quickOrderText: { color: "#FFF", fontWeight: "900", fontSize: 11 },
-
-  navBar: {
-    position: "absolute",
-    bottom: 0,
-    flexDirection: "row",
-    backgroundColor: "#E95D91",
-    width: "100%",
-    height: 80,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingBottom: 15,
-  },
-  navItem: { alignItems: "center" },
-  navLabel: { color: "#FFF", fontSize: 10, marginTop: 4 },
-  reserveContainer: { top: -25 },
-  reserveCircle: {
     width: 80,
-    height: 80,
-    backgroundColor: "#FFF",
-    borderRadius: 40,
-    borderWidth: 5,
-    borderColor: "#E95D91",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
+    height: 35,
   },
-  reserveLabel: { color: "#E95D91", fontSize: 10, fontWeight: "bold", marginTop: 2 },
+  quickOrderText: {
+    color: "#FFF",
+    fontWeight: "900",
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textAlign: "center",
+    bottom: 4,
+  },
 });
