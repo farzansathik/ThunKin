@@ -9,15 +9,13 @@ import { FontAwesome6, Ionicons, MaterialCommunityIcons } from "@expo/vector-ico
 import Typography from "../typography";
 
 type CafeteriaItem = {
-  location: string;
-  sub_location?: string;
+  location_name: string;
+  name: string;
   status: string;
-  open_time?: string;
-  close_time?: string;
-  distance_min?: number;
-  distance_meters?: number;
+  open_time: string;
+  close_time: string;
+  favorite: boolean;
 };
-
 type Props = {
   item: CafeteriaItem;
   onPress: () => void;
@@ -25,12 +23,15 @@ type Props = {
 
 export default function CafeteriaSelectCard({ item, onPress }: Props) {
 // if real data from database is missing any of these fields, use default values to avoid crashes
-  const isOpen = item.status?.toLowerCase() === "open";
-  const openTime = item.open_time ?? "06:00";
-  const closeTime = item.close_time ?? "16:45";
-  const distMin = item.distance_min ?? 6;
-  const distMeters = item.distance_meters ?? 15;
-  const subLocation = item.sub_location ?? "iCanteen";
+  const isOpen = item.status;
+  const formatTime = (time: string) => time.slice(0, 5);
+  const openTime = item.open_time ? formatTime(item.open_time) : "--:--";
+  const closeTime = item.close_time ? formatTime(item.close_time) : "--:--";
+  const distMin = "0"; // sync with google maps API later when we have real distance data
+  const distMeters = "0";
+  const name = item.name ?? "โรงอาหาร";
+  const locationName = item.location_name ?? "ไม่มีชื่อสถานที่";
+  const favorite = item.favorite ?? false; // didnt do yet
 
   // Hide card if closed (อันที่ปิดเราจะไม่โชว์เลย)
   if (!isOpen) return null;
@@ -42,13 +43,13 @@ export default function CafeteriaSelectCard({ item, onPress }: Props) {
 
         {/* TOP: Location title   - num.of line อาจเสร็จเป็น 2 ทีหลัง*/}
         <Typography weight="bold" size={18} color="#454545" numberOfLines={1}>  
-          {item.location}
+          {locationName}
         </Typography>
 
         {/* MIDDLE: Sub location on next line */}
-        {subLocation ? (
+        {name ? (
         <Typography weight="bold" size={17} color="#DF5789" numberOfLines={1}>
-            {subLocation}
+            {name}
         </Typography>
         ) : null}
 

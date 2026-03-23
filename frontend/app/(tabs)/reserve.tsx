@@ -27,14 +27,14 @@ export default function ReserveScreen() {
 
   const fetchLocations = async () => {
     const { data, error } = await supabase
-      .from("restaurant")
-      .select("location, status")
-      .order("location", { ascending: true });
+      .from("cafeteria")                          
+      .select("id, location_name, name, status, open_time, close_time, favorite")  
+      .order("location_name", { ascending: true });   //เดี่ยวถ้าผูกกับ google maps API ได้ค่อยเอา order by distance มาใส่แทน
 
     if (!error && data) {
       const uniqueMap = new Map();
       data.forEach((item) => {
-        if (!uniqueMap.has(item.location)) uniqueMap.set(item.location, item);
+        if (!uniqueMap.has(item.location_name)) uniqueMap.set(item.location_name, item);
       });
       setLocations(Array.from(uniqueMap.values()));
     }
@@ -46,7 +46,7 @@ export default function ReserveScreen() {
   }, []);
 
   const filteredData = locations.filter((item) =>
-    (item.location || "").toLowerCase().includes(searchQuery.toLowerCase())
+    (item.location_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -113,7 +113,7 @@ export default function ReserveScreen() {
                 onPress={() =>
                   router.push({
                     pathname: "/restaurant",
-                    params: { filterLocation: item.location },
+                    params: { cafeId: item.id },
                   })
                 }
               />
