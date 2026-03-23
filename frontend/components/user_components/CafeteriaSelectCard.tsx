@@ -41,7 +41,7 @@ export default function CafeteriaSelectCard({ item, onPress }: Props) {
       <View style={styles.cardInfo}>
 
         {/* TOP: Location title   - num.of line อาจเสร็จเป็น 2 ทีหลัง*/}
-        <Typography weight="bold" size={18} color="#454545" numberOfLines={1}>  
+        <Typography weight="bold" size={20} color="#454545" numberOfLines={1}>  
           {item.location}
         </Typography>
 
