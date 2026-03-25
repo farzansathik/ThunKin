@@ -22,7 +22,7 @@ export default function VendorStallSelectCard({ item, index }: Props) {
       <Image source={{ uri: `https://loremflickr.com/320/240/food?random=${item.id}` }} style={styles.shopImage} />
       <View style={styles.numberBadge}>
         <Typography size={16} style={styles.numberText}>
-          {index + 1}
+          {item.id}
         </Typography>
       </View>
       <Typography weight="bold" size={18} style={styles.shopName}>

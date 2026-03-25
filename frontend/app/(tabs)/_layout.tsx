@@ -107,8 +107,6 @@ export default function TabLayout() {
       />
 
       {/* HIDDEN SCREENS */}
-      <Tabs.Screen name="restaurant" options={{ href: null }} />
-      <Tabs.Screen name="timeslot" options={{ href: null }} />
       <Tabs.Screen name="menu" options={{ href: null }} />
     </Tabs>
   );

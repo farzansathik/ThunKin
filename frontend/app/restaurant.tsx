@@ -33,7 +33,8 @@ export default function RestaurantScreen() {
         .from("restaurant")
         .select("*")
         .eq("cafe_id", cafeId)
-        .eq("status", true);  // only fetch open restaurants
+        .eq("status", true)  // only fetch open restaurants
+        .order("id", { ascending: true });  // sort by id ascending
 
       setRestaurants(data || []);
       setLoading(false);
@@ -103,8 +104,8 @@ const styles = StyleSheet.create({
   backButton: { position: 'absolute', top: 50, left: 20 , elevation: 5, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
 
   locationPillWrapper: {
-    position: 'absolute',
-    bottom: -0,        
+    bottom: 0,
+    position: 'absolute',     
     width: '100%',
     zIndex: 1,
   },
@@ -115,11 +116,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
   },
   locationText: {
     color: 'white',
@@ -164,6 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  
   titleAccent: {
     width: 5,
     height: 32,
@@ -171,11 +168,4 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginRight: 10,
   },
-
-  // Shop cards
-  shopCard: { width: '48%', marginBottom: 20, borderRadius: 15, overflow: 'hidden', elevation: 2, backgroundColor: 'white' },
-  shopImage: { width: '100%', height: 120 },
-  numberBadge: { position: 'absolute', top: 5, left: 5, backgroundColor: 'white', width: 25, height: 25, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  numberText: { color: '#E95D91', fontWeight: 'bold' },
-  shopName: { padding: 10, fontWeight: 'bold', textAlign: 'center' },
 });
