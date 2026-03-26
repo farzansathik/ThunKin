@@ -16,10 +16,18 @@ import { supabase } from "../../lib/supabase";
 
 const { width } = Dimensions.get("window");
 
+interface MenuItem {
+  id: string | number;
+  name: string;
+  price: number;
+  image_url?: string;
+}
+
 export default function MenuScreen() {
   const router = useRouter();
   const { shopId, shopName, slotTime } = useLocalSearchParams();
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [selectedFoodName, setSelectedFoodName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMenu = async () => {
@@ -45,12 +53,31 @@ export default function MenuScreen() {
     });
   };
 
-  const renderItem = ({ item }: { item: any }) => (
+  const handleMenuSelect = (item: MenuItem) => {
+    console.log("Selected item:", item.name, item.id);
+    console.log("Menu params received:", { shopId, shopName, slotTime });
+    setSelectedFoodName(item.name);
+
+    const params = {
+      filterFood: item.name,
+      foodId: item.id,
+      foodName: item.name,
+      shopId,
+      shopName,
+      slotTime,
+    };
+    console.log("Sending to food:", params);
+
+    router.push({
+      pathname: "/food",
+      params,
+    });
+  };
+
+  const renderItem = ({ item }: { item: MenuItem }) => (
     <TouchableOpacity 
       style={styles.menuCard}
-      onPress={() => {
-        console.log("Selected item:", item.name);
-      }}
+      onPress={() => handleMenuSelect(item)}
     >
       <Image 
         source={{ uri: item.image_url || `https://loremflickr.com/320/240/food?random=${item.id}` }} 

@@ -26,6 +26,10 @@ interface HourGroup {
 export default function TimeSlotScreen() {
   const router = useRouter();
   const { shopId, shopName } = useLocalSearchParams();
+  
+  // Debug logging
+  console.log("TimeSlotScreen params:", { shopId, shopName });
+  
   const [loading, setLoading] = useState(true);
   const [timeGroups, setTimeGroups] = useState<HourGroup[]>([]);
 
@@ -121,10 +125,13 @@ export default function TimeSlotScreen() {
                       key={slot.time} 
                       style={[styles.slotCard, isFull && styles.disabledCard]}
                       disabled={isFull}
-                      onPress={() => router.push({
-                        pathname: "/menu",
-                        params: { shopId, shopName, slotTime: slot.startTime.toISOString() }
-                      })}
+                      onPress={() => {
+                        console.log("TimeSlot selected:", slot.time, "ISO:", slot.startTime.toISOString());
+                        router.push({
+                          pathname: "/menu",
+                          params: { shopId, shopName, slotTime: slot.time }
+                        });
+                      }}
                     >
                       <View style={[styles.availableBadge, { backgroundColor: badgeColor }]}>
                         <Text style={styles.availableLabel}>Available</Text>
