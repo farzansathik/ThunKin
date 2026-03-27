@@ -10,18 +10,10 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
-  Dimensions,
 } from "react-native";
 import { supabase } from "../lib/supabase";
-
-const { width } = Dimensions.get("window");
-
-interface MenuItem {
-  id: string | number;
-  name: string;
-  price: number;
-  image_url?: string;
-}
+import Typography from "@/components/typography";
+import MenuSelectCard, { MenuItem } from "@/components/user_components/MenuSelectCard";
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -53,10 +45,6 @@ export default function MenuScreen() {
   //   });
   // };
 
-  const handleBack = () => {
-    router.back();
-  };
-
   const handleMenuSelect = (item: MenuItem) => {
     console.log("Selected item:", item.name, item.id);
     console.log("Menu params received:", { shopId, shopName, slotTime });
@@ -79,43 +67,38 @@ export default function MenuScreen() {
   };
 
   const renderItem = ({ item }: { item: MenuItem }) => (
-    <TouchableOpacity 
-      style={styles.menuCard}
-      onPress={() => handleMenuSelect(item)}
-    >
-      <Image 
-        source={{ uri: item.image_url || `https://loremflickr.com/320/240/food?random=${item.id}` }} 
-        style={styles.foodImage} 
-      />
-      <Text style={styles.foodName}>{item.name}</Text>
-      <Text style={styles.foodPrice}>{item.price} Baht</Text>
-    </TouchableOpacity>
+    <MenuSelectCard item={item} onPress={handleMenuSelect} />
   );
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* 1. Header with Background Image */}
+      {/* Banner */}
       <View style={styles.topBanner}>
         <Image 
           source={{ uri: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800' }} 
           style={styles.bannerImage} 
         />
-        {/* Updated Button Style to match other pages */}
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={28} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* 2. Content Card with Rounded Top */}
+      {/* Content Card with Rounded Top */}
       <View style={styles.contentCard}>
         <View style={styles.shopTitleRow}>
           <View style={styles.pinkIndicator} />
-          <Text style={styles.shopName} numberOfLines={1}>{shopName || "Restaurant Name"}</Text>
+          <Typography weight="bold" size={29} style={styles.shopName} numberOfLines={1}>
+            {shopName}
+          </Typography>
         </View>
+        <View style={styles.divider} />
 
-        <Text style={styles.sectionTitle}>For You</Text>
+        <Typography weight="bold" size={24} style={styles.sectionTitle}>
+          For You
+        </Typography>
 
         {loading ? (
           <ActivityIndicator color="#E95D91" size="large" style={{ marginTop: 50 }} />
@@ -139,36 +122,46 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
   topBanner: { height: 220, backgroundColor: "#333" },
   bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
-  backButton: { 
-    position: "absolute", 
-    top: 55, // Adjusted to match header alignment
-    left: 20, 
-    padding: 8 
-  },
+  backButton: { position: 'absolute', top: 50, left: 20 , elevation: 5, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
+  
   contentCard: { 
     flex: 1, 
-    marginTop: -40, 
+    marginTop: -50, 
     backgroundColor: "white", 
-    borderTopLeftRadius: 40, 
-    borderTopRightRadius: 40, 
-    paddingHorizontal: 20, 
-    paddingTop: 30 
+    borderTopLeftRadius: 35, 
+    borderTopRightRadius: 35, 
+    paddingHorizontal: 21, 
+    paddingTop: 15 
   },
-  shopTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 25 },
-  pinkIndicator: { width: 4, height: 28, backgroundColor: "#E95D91", borderRadius: 2, marginRight: 12 },
-  shopName: { fontSize: 26, fontWeight: "900", color: "#333", flex: 1 },
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 20 },
+
+  pinkIndicator: { 
+    width: 5.5, 
+    height: 33, 
+    backgroundColor: "#E95D91", 
+    borderRadius: 12, 
+    marginRight: 15 
+  },
+
+  shopTitleRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center",   
+    marginBottom: 16,
+    left: -7
+  },
+
+  shopName: { 
+    color: "#454545",
+  },
+
+  divider: {
+    bottom: 6,
+    height: 2,
+    backgroundColor: "#D4D4D4",
+    marginBottom: 10,
+    marginHorizontal: -21,
+  },
+
+  sectionTitle: { color: "#454545", marginBottom: 15 },
   row: { justifyContent: "space-between" },
-  menuCard: { 
-    width: (width - 55) / 2, 
-    marginBottom: 20 
-  },
-  foodImage: { 
-    width: "100%", 
-    height: 160, 
-    borderRadius: 20, // More rounded like the other cards
-    backgroundColor: "#F5F5F5" 
-  },
-  foodName: { fontSize: 16, fontWeight: "800", marginTop: 8, color: "#333" },
-  foodPrice: { fontSize: 14, color: "#E95D91", fontWeight: "700", marginTop: 2 }, // Made price pink for contrast
 });
