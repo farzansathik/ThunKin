@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   // Banner
   topBanner: { height: 180 },
   bannerImage: { width: '100%', height: '100%' },
-  backButton: { position: 'absolute', top: 50, left: 20 , elevation: 5, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
+  backButton: { position: 'absolute', top: 50, left: 20 , backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
 
   locationPillWrapper: {
     bottom: 0,

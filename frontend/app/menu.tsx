@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
   topBanner: { height: 220, backgroundColor: "#333" },
   bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
-  backButton: { position: 'absolute', top: 50, left: 20 , elevation: 5, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
+  backButton: { position: 'absolute', top: 50, left: 20 , backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
   
   contentCard: { 
     flex: 1, 

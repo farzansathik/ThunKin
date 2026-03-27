@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   Image,
   Pressable,
@@ -14,7 +13,6 @@ import { supabase } from "../lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Typography from "@/components/typography";
 
-const BASE_PRICE = 40; // Keep as fallback
 
 interface MenuItem {
   id: string;
@@ -27,7 +25,6 @@ export default function FoodScreen() {
   const router = useRouter();
   const { filterFood, foodId, foodName, shopId, shopName, slotTime } = useLocalSearchParams();
   
-  // Debug logging
   console.log("FoodScreen params:", { filterFood, foodId, foodName, shopId, shopName, slotTime });
   
   const [foodItem, setFoodItem] = useState<MenuItem | null>(null);
@@ -66,90 +63,95 @@ export default function FoodScreen() {
     }
   }, [foodName, filterFood, foodItem]);
 
-  // Updated Navigation Handler
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/menu");
-    }
-  };
+  // const handleBack = () => {
+  //   if (router.canGoBack()) {
+  //     router.back();
+  //   } else {
+  //     router.replace("/menu");
+  //   }
+  // };
 
   const placeOrder = () => {
     console.log("Order placed for:", selectedFoodName);
-    console.log("Sending to status:", {foodId, foodName: selectedFoodName, shopId, shopName, slotTime});
+    console.log("Sending to status:", { foodId, foodName: selectedFoodName, shopId, shopName, slotTime });
 
     router.push({
       pathname: "/status",
-      params: {foodId, foodName: selectedFoodName, shopId, shopName, slotTime}
+      params: { foodId, foodName: selectedFoodName, shopId, shopName, slotTime }
     });
   };
 
   return (
-  <View style={styles.container}>
-    <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
 
-    <View style={styles.content}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.topBanner}>
-          <Image
-            source={{
-              uri:
-                foodItem?.image_url ||
-                `https://loremflickr.com/320/240/food?random=${foodItem?.id}`,
-            }}
-            style={styles.bannerImage}
-          />
+      <View style={styles.content}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.topBanner}>
+            <Image
+              source={{
+                uri:
+                  foodItem?.image_url ||
+                  `https://loremflickr.com/320/240/food?random=${foodItem?.id}`,
+              }}
+              style={styles.bannerImage}
+            />
 
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={28} color="white" />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.productHeader}>
-          <View>
-            <Typography weight="bold" size={24} style={styles.title}>
-              {selectedFoodName || foodItem?.name}
+          {/* Product Header: name+subtitle left, price right */}
+          <View style={styles.productHeader}>
+            <View style={styles.productTitleBlock}>
+              <Typography weight="bold" size={28} style={styles.foodName}>
+                {selectedFoodName || foodItem?.name}
+              </Typography>
+              <Typography weight="medium" size={16} style={styles.shopSubtitle}>
+                {shopName as string}
+              </Typography>
+            </View>
+            <Typography weight="bold" size={30} style={styles.price}>
+              ฿ {foodItem?.price}
             </Typography>
           </View>
 
-          <Typography weight="bold" size={28} style={styles.price}>
-            ฿{foodItem?.price || BASE_PRICE}
-          </Typography>
-        </View>
+          <SectionTitle title="Add-ons" />
+          <OptionRow label="Extra Sticky Rice" price="+฿10" checked={false} />
+          <OptionRow label="Extra Chicken (1 piece)" price="+฿15" checked={false} />
 
-        <SectionTitle title="Add-ons" />
-        <OptionRow label="Extra Sticky Rice" price="+฿10" checked={false} />
-        <OptionRow label="Extra Chicken (1 piece)" price="+฿15" checked={false} />
+          <SectionTitle title="Sauce" />
+          <OptionRow label="Sweet Chili Sauce" price="Free" checked={false} />
 
-        <SectionTitle title="Sauce" />
-        <OptionRow label="Sweet Chili Sauce" price="Free" checked={false} />
-
-        <SectionTitle title="To-go Box" />
-        <OptionRow label="Standard Box" price="+฿5" checked={false} />
-      </ScrollView>
-    </View>
-
-    <View style={styles.bottomBar}>
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total:</Text>
-        <Text style={styles.totalPrice}>{foodItem?.price} Baht</Text>
+          <SectionTitle title="To-go Box" />
+          <OptionRow label="Standard Box" price="+฿5" checked={false} />
+        </ScrollView>
       </View>
 
-      <Pressable style={styles.orderButton} onPress={placeOrder}>
-        <Text style={styles.orderButtonText}>Place Order</Text>
-      </Pressable>
+      <View style={styles.bottomBar}>
+        <View style={styles.totalRow}>
+          <Typography size={26} weight="medium" style={styles.totalLabel}>Total:</Typography>
+          <Typography size={26} weight="bold" style={styles.totalPrice}>{foodItem?.price} Baht</Typography>
+        </View>
+
+        <Pressable style={styles.orderButton} onPress={placeOrder}>
+          <Typography size={26} weight="bold" style={styles.orderButtonText}>Place Order</Typography>
+        </Pressable>
+      </View>
     </View>
-  </View>
-);}
+  );
+}
 
 function SectionTitle({ title }: { title: string }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <Typography size={18} weight="medium" style={styles.sectionHeaderText}>
+        {title}
+      </Typography>
     </View>
   );
 }
@@ -157,118 +159,120 @@ function SectionTitle({ title }: { title: string }) {
 function OptionRow({ label, price, checked }: { label: string; price: string; checked: boolean }) {
   return (
     <View style={styles.optionRow}>
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+      <View style={styles.optionLeft}>
+      <View style={styles.checkbox}>
         {checked && <Ionicons name="checkmark" size={16} color="#222" />}
       </View>
+      <Typography size={16} style={styles.optionText}>
+        {label}
+      </Typography>
+    </View>
 
-      <Text style={styles.optionText}>
-        {label} — {price}
-      </Text>
+      {/* Price on the right */}
+      <Typography size={16} style={styles.optionPrice}>
+        {price}
+      </Typography>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-container: { flex: 1, backgroundColor: "white" },
-  screen: {
-    flex: 1,
-    backgroundColor: "#1F1F1F",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 12,
-  },
+  container: { flex: 1, backgroundColor: "white" },
 
   content: {
-    flex:1,
+    flex: 1,
   },
 
   scrollContent: {
+    flexGrow: 1,
     paddingBottom: 12,
-},
-
-  imageWrapper: {
-    position: "relative",
   },
 
-  foodImage: {
-    width: "100%",
-    height: 230,
-  },
-
-  topBanner: { height: 220, backgroundColor: "#333" },
+  /* Banner */
+  topBanner: { height: 200, backgroundColor: "#333" },
   bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
-  backButton: { 
-    position: "absolute", 
-    top: 55, // Adjusted to match header alignment
-    left: 20, 
-    padding: 8 
-  },
+  backButton: { position: 'absolute', top: 50, left: 20 , backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
 
+  /* Product Header */
   productHeader: {
-    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EBEBEB",
   },
 
-  title: {
-    color: "#444",
-    bottom: -3
+  productTitleBlock: {
+    flex: 1,
+    marginRight: 12,
+  },
+
+  foodName: {
+    color: "#333",
+  },
+  shopSubtitle: {
+    color: "#999",
+    bottom: 2,
   },
 
   price: {
-    fontSize: 28,
-    fontWeight: "800",
     color: "#E95D91",
-    bottom: 2
   },
 
   sectionHeader: {
-    backgroundColor: "#DDDDDD",
+    backgroundColor: "#E4E4E4",
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
 
   sectionHeaderText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#111",
+    color: "#000000",
   },
 
   optionRow: {
-    minHeight: 58,
-    backgroundColor: "#F7F7F7",
+    minHeight: 60,
+    backgroundColor: "#f7f7f79d",
     borderBottomWidth: 1,
-    borderBottomColor: "#D0D0D0",
+    borderBottomColor: "#d0d0d065",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
   },
 
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 8,
+  },
+
   checkbox: {
     width: 18,
     height: 18,
-    backgroundColor: "#D9D9D9",
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: "#CCC",
+    backgroundColor: "#fff",
     marginRight: 18,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  checkboxChecked: {
-    backgroundColor: "#ECECEC",
-  },
-
   optionText: {
     flex: 1,
-    fontSize: 16,
     color: "#333",
+  },
+
+  optionPrice: {
+    color: "#888",
   },
 
   bottomBar: {
     backgroundColor: "#F7F7F7",
-    paddingTop: 8,
+    paddingTop: 3,
     paddingHorizontal: 8,
     paddingBottom: 12,
     borderTopWidth: 1,
@@ -279,20 +283,16 @@ container: { flex: 1, backgroundColor: "white" },
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 18,
     backgroundColor: "#F7F7F7",
   },
 
   totalLabel: {
-    fontSize: 18,
-    fontWeight: "500",
     color: "#111",
     marginRight: 8,
   },
 
   totalPrice: {
-    fontSize: 18,
-    fontWeight: "800",
     color: "#E15A8B",
   },
 
@@ -313,7 +313,5 @@ container: { flex: 1, backgroundColor: "white" },
 
   orderButtonText: {
     color: "#FFF",
-    fontSize: 18,
-    fontWeight: "800",
   },
 });
