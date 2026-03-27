@@ -46,11 +46,15 @@ export default function MenuScreen() {
   }, [shopId]);
 
   // Updated Navigation Handler
+  // const handleBack = () => {
+  //   router.push({
+  //     pathname: "/timeslot",
+  //     params: { shopId, shopName } // Passing params back to ensure timeslot can reload
+  //   });
+  // };
+
   const handleBack = () => {
-    router.push({
-      pathname: "/timeslot",
-      params: { shopId, shopName } // Passing params back to ensure timeslot can reload
-    });
+    router.back();
   };
 
   const handleMenuSelect = (item: MenuItem) => {

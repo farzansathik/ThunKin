@@ -84,12 +84,15 @@ export default function TimeSlotScreen() {
     generateAndFetchSlots();
   }, [shopId]);
 
+  // const handleBack = () => {     เก็บไว้ก่อน เเต่ใช้ replace มันจะไม่จำค่าก่อน
+  //   if (router.canGoBack()) {
+  //     router.back();
+  //   } else {
+  //     router.replace("/restaurant");
+  //   }
+  // };
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/restaurant");
-    }
+    router.back();
   };
 
   return (

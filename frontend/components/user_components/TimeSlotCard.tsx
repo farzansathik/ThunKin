@@ -27,7 +27,7 @@ export default function TimeSlotCard({ slot, shopId, shopName }: Props) {
       disabled={isFull}
       onPress={() => router.push({
         pathname: "/menu",
-        params: { shopId, shopName, slotTime: slot.startTime.toISOString() }
+        params: { shopId, shopName, slotTime: slot.time }
       })}
     >
     <View style={[styles.availableBadge, { backgroundColor: badgeColor }]}>
