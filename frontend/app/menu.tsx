@@ -12,7 +12,7 @@ import {
   StatusBar,
   Dimensions,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../lib/supabase";
 
 const { width } = Dimensions.get("window");
 

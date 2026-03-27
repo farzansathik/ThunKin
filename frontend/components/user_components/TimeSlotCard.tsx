@@ -40,7 +40,7 @@ export default function TimeSlotCard({ slot, shopId, shopName }: Props) {
       </View>
       <View style={styles.divider} />
       <View style={styles.timeTextContainer}>
-        <Typography weight="bold" size={20} fontType={3} style={[styles.slotTimeText, { color: isFull ? "#999" : "#333" }]}>
+        <Typography weight="bold" size={18} fontType={3} style={[styles.slotTimeText, { color: isFull ? "#999" : "#333" }]}>
           {slot.time}
         </Typography>
       </View>

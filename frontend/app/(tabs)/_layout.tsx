@@ -105,9 +105,6 @@ export default function TabLayout() {
           ),
         }}
       />
-
-      {/* HIDDEN SCREENS */}
-      <Tabs.Screen name="menu" options={{ href: null }} />
     </Tabs>
   );
 }
