@@ -9,7 +9,7 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useFonts } from "expo-font";
-import { Text } from "react-native";
+import { UserProvider } from "../context/UserContext";
 
 // Set login as the initial route
 export const unstable_settings = {
@@ -40,6 +40,7 @@ export default function RootLayout() {
 
 
   return (
+    <UserProvider>
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         {/* Everyone sees this first */}
@@ -59,5 +60,6 @@ export default function RootLayout() {
 
       <StatusBar style="auto" />
     </ThemeProvider>
+    </UserProvider>
   );
 }

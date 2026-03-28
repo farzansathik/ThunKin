@@ -27,14 +27,12 @@ interface MenuItem {
 export default function StatusScreen() {
     const router = useRouter();
     const { foodId, foodName, shopId, shopName, slotTime } = useLocalSearchParams();
-    
-    console.log("StatusScreen params:", { foodId, foodName, shopId, shopName, slotTime });
-    
     const [foodItem, setFoodItem] = useState<MenuItem | null>(null);
-    const [shopItem, setShopItem] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        console.log("StatusScreen params:", { foodId, foodName, shopId, shopName, slotTime });
+
         const fetchFood = async () => {
           if (!foodId) return;
     

@@ -51,7 +51,6 @@ export default function MenuScreen() {
     setSelectedFoodName(item.name);
 
     const params = {
-      filterFood: item.name,
       foodId: item.id,
       foodName: item.name,
       shopId,

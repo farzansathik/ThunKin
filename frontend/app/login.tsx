@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useUser } from "../context/UserContext";
 
 export default function LoginScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +18,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState("user");
+  const { setUserId } = useUser();
 
 const handleAuth = async () => {
 
@@ -47,6 +49,7 @@ const handleAuth = async () => {
   }
 
   const userId = profile.id;
+  setUserId(userId);
 
   console.log("Logged in user ID:", userId);
 

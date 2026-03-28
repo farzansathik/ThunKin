@@ -7,12 +7,13 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Typography from "@/components/typography";
-
+import { useUser } from "../context/UserContext";
 
 interface MenuItem {
   id: string;
@@ -23,22 +24,23 @@ interface MenuItem {
 
 export default function FoodScreen() {
   const router = useRouter();
-  const { filterFood, foodId, foodName, shopId, shopName, slotTime } = useLocalSearchParams();
-  
-  console.log("FoodScreen params:", { filterFood, foodId, foodName, shopId, shopName, slotTime });
-  
+  const { userId } = useUser();
+  const { foodId, foodName, shopId, shopName, slotTime } = useLocalSearchParams();
   const [foodItem, setFoodItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedFoodName, setSelectedFoodName] = useState<string>("");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useEffect(() => {
+    console.log("FoodScreen params:", { foodId, foodName, shopId, shopName, slotTime });
+
     const fetchFood = async () => {
       if (!foodId) return;
 
       const { data, error } = await supabase
-        .from('menu')
-        .select('*')
-        .eq('id', foodId)
+        .from("menu")
+        .select("*")
+        .eq("id", foodId)
         .single();
 
       if (error) {
@@ -56,29 +58,88 @@ export default function FoodScreen() {
   useEffect(() => {
     if (foodName) {
       setSelectedFoodName(String(foodName));
-    } else if (filterFood) {
-      setSelectedFoodName(String(filterFood));
     } else if (foodItem?.name) {
       setSelectedFoodName(foodItem.name);
     }
-  }, [foodName, filterFood, foodItem]);
+  }, [foodName, foodItem]);
 
-  // const handleBack = () => {
-  //   if (router.canGoBack()) {
-  //     router.back();
-  //   } else {
-  //     router.replace("/menu");
-  //   }
-  // };
+  const placeOrder = async () => {
+    if (!foodItem) {
+      Alert.alert("Error", "Food item not loaded yet.");
+      return;
+    }
 
-  const placeOrder = () => {
-    console.log("Order placed for:", selectedFoodName);
-    console.log("Sending to status:", { foodId, foodName: selectedFoodName, shopId, shopName, slotTime });
+    if (!userId) {
+      Alert.alert("Error", "User not found. Please log in again.");
+      return;
+    }
 
-    router.push({
-      pathname: "/status",
-      params: { foodId, foodName: selectedFoodName, shopId, shopName, slotTime }
-    });
+    try {
+      setIsPlacingOrder(true);
+
+      const slotString = String(slotTime);
+      const startTime = slotString.split(" - ")[0].trim(); // "11:20"
+      const today = new Date();
+
+      // Build datetime string manually — no UTC conversion
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+
+      const pickUpDateTime = `${year}-${month}-${day}T${startTime}:00`; // "2026-03-28T11:20:00"
+
+      const {data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: userId,
+          total_price: foodItem.price,
+          status: "completed",
+          pick_up_time: pickUpDateTime,
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error("Order insert failed:", orderError);
+        Alert.alert("Error", "Failed to place order. Please try again.");
+        return;
+      }
+
+      console.log("Order placed successfully:", orderData);
+
+      // Insert into order_items linked to the new order
+      const { data: orderItemData, error: orderItemError } = await supabase
+        .from("order_items")
+        .insert({
+          order_id: orderData.id,       // links to orders.id
+          menu_id: Number(foodId),      // links to menu.id
+          rest_id: Number(shopId),      // links to restaurant.id
+          price: foodItem.price,        // original price
+          final_price: foodItem.price,  // same for now, change if add-ons are added
+          quantity: 1,
+          status: "completed",
+        })
+        .select()
+        .single();
+
+      if (orderItemError) {
+        console.error("Order item insert failed:", orderItemError);
+        Alert.alert("Error", "Order created but item details failed. Please contact support.");
+        return;
+      }
+
+      console.log("Order item created:", orderItemData);
+
+      router.push({
+        pathname: "/status",
+        params: { foodId, foodName: selectedFoodName, shopId, shopName, slotTime, orderId: orderData.id },
+      });
+    } catch (err) {
+      console.error("Unexpected error placing order:", err);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   return (
@@ -138,8 +199,14 @@ export default function FoodScreen() {
           <Typography size={26} weight="bold" style={styles.totalPrice}>{foodItem?.price} Baht</Typography>
         </View>
 
-        <Pressable style={styles.orderButton} onPress={placeOrder}>
-          <Typography size={26} weight="bold" style={styles.orderButtonText}>Place Order</Typography>
+        <Pressable
+          style={[styles.orderButton, isPlacingOrder && { opacity: 0.6 }]}
+          onPress={placeOrder}
+          disabled={isPlacingOrder}
+        >
+          <Typography size={26} weight="bold" style={styles.orderButtonText}>
+            {isPlacingOrder ? "Placing Order..." : "Place Order"}
+          </Typography>
         </Pressable>
       </View>
     </View>
@@ -160,15 +227,13 @@ function OptionRow({ label, price, checked }: { label: string; price: string; ch
   return (
     <View style={styles.optionRow}>
       <View style={styles.optionLeft}>
-      <View style={styles.checkbox}>
-        {checked && <Ionicons name="checkmark" size={16} color="#222" />}
+        <View style={styles.checkbox}>
+          {checked && <Ionicons name="checkmark" size={16} color="#222" />}
+        </View>
+        <Typography size={16} style={styles.optionText}>
+          {label}
+        </Typography>
       </View>
-      <Typography size={16} style={styles.optionText}>
-        {label}
-      </Typography>
-    </View>
-
-      {/* Price on the right */}
       <Typography size={16} style={styles.optionPrice}>
         {price}
       </Typography>
@@ -191,7 +256,7 @@ const styles = StyleSheet.create({
   /* Banner */
   topBanner: { height: 200, backgroundColor: "#333" },
   bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
-  backButton: { position: 'absolute', top: 50, left: 20 , backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
+  backButton: { position: "absolute", top: 50, left: 20, backgroundColor: "rgba(0,0,0,0.3)", borderRadius: 30, padding: 6 },
 
   /* Product Header */
   productHeader: {
