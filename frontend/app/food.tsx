@@ -166,9 +166,9 @@ export default function FoodScreen() {
 
 // **หลักการทำงานน่าจะประมาณนี้**
 
-// User places order   → null        to "pending"    (logged in food.tsx now)
-// Vendor sees order   → "pending"   to "ready"      (logged in vendor screen later)
-// User picks up       → "ready"     to "picked_up"  (logged in status screen later)
+// User places order   → null        to "pending"   (order history show in Ongoing)   (logged in food.tsx now)
+// Vendor sees order   → "pending"   to "ready"     (order history show in Ready)   (logged in vendor screen later)
+// User picks up       → "ready"     to "picked_up" (order history show in Date)  (logged in status screen later)
 
   return (
     <View style={styles.container}>

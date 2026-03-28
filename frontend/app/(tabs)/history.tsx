@@ -13,6 +13,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import { supabase } from "../../lib/supabase";
 import Typography from "@/components/typography";
 import RefreshableScrollView from "@/components/RefreshableScrollView";
+import OrderHistoryCard from "@/components/user_components/OrderHistoryCard";
 
 interface OrderItem {
   id: string;
@@ -263,55 +264,7 @@ export default function HistoryScreen() {
   };
 
   const renderOrderItem = (order: Order) => (
-    <View key={order.id} style={styles.orderCard}>
-      <View style={styles.orderCardLeft}>
-        <View style={[styles.orderImage, { backgroundColor: "#E0E0E0" }]} />
-      </View>
-
-      <View style={styles.orderCardMiddle}>
-        <Typography
-          size={20}
-          weight="bold"
-          style={styles.foodName}
-          numberOfLines={1}
-        >
-          {order.items[0]?.name}
-        </Typography>
-
-        <View style={styles.restaurantRow}>
-          <Ionicons name="storefront-outline" size={14} color="#E95D91" />
-          <Typography
-            size={14}
-            weight="medium"
-            style={styles.restaurantName}
-            numberOfLines={1}
-          >
-            {order.restaurant_name}
-          </Typography>
-        </View>
-
-        {order.items.length > 1 && (
-          <Typography size={12} style={styles.moreItems}>
-            +{order.items.length - 1} more
-          </Typography>
-        )}
-
-        <View style={styles.pickupRow}>
-          <Typography weight="medium" size={12} style={styles.pickupLabel}>
-            Pick-Up Time:{"  "}
-          </Typography>
-          <Typography fontType={3} weight="bold" size={16} style={styles.pickupValue}>
-            {formatTime(order.pick_up_time)}
-          </Typography>
-        </View>
-      </View>
-
-      <View style={styles.orderCardRight}>
-        <Typography size={20} weight="bold" style={styles.price}>
-          ฿ {order.total_price}
-        </Typography>
-      </View>
-    </View>
+    <OrderHistoryCard key={order.id} order={order} formatTime={formatTime} />
   );
 
   // ── Ready section ────────────────────────────────────────────────────────
@@ -617,72 +570,5 @@ const styles = StyleSheet.create({
   },
   ordersListInBox: {
     gap: 8,
-  },
-  orderCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#ebebeb",
-    elevation: 1,
-  },
-  orderCardLeft: {
-    marginRight: 12,
-  },
-  orderImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 10,
-    backgroundColor: "#E0E0E0",
-  },
-  orderCardMiddle: {
-    flex: 1,
-    justifyContent: "flex-start",
-    gap: 3,
-  },
-  orderHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  restaurantName: {
-    color: "#8f8f8f",
-    marginLeft: 6,
-    maxWidth: 140,
-  },
-  restaurantRow: {
-    bottom: 3,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  foodName: {
-    color: "#454545",
-  },
-  pickupRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  pickupLabel: {
-    color: "#222222",
-  },
-  pickupValue: {
-    color: "#E95D91",
-  },
-  moreItems: {
-    color: "#999999",
-    marginBottom: 4,
-  },
-  pickupTime: {
-    color: "#2D2D2D",
-  },
-  orderCardRight: {
-    alignItems: "flex-end",
-    alignSelf: "flex-start",
-    marginLeft: 8,
-  },
-  price: {
-    color: "#E95D91",
   },
 });

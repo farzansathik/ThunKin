@@ -60,9 +60,9 @@ export default function StatusScreen() {
     };
 
     // Display name: prefer fetched foodItem, fallback to param
-    const displayName = foodItem?.name ?? (Array.isArray(foodName) ? foodName[0] : foodName) ?? "ข้าวเหนียวหมูปลอม";
-    const displayShop = Array.isArray(shopName) ? shopName[0] : shopName ?? "ร้านอีสานเก๊";
-    const displaySlot = Array.isArray(slotTime) ? slotTime[0] : slotTime ?? "1A";
+    const displayName = foodItem?.name ?? (Array.isArray(foodName) ? foodName[0] : foodName) ?? "N/A";
+    const displayShop = Array.isArray(shopName) ? shopName[0] : shopName ?? "N/A";
+    const displaySlot = "1A";  //เดี่ยวเเก้หลังทำ vendor ส่งมาเสร็จ
 
     return (
         <View style={styles.container}>

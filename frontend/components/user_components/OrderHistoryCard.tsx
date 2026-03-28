@@ -1,0 +1,190 @@
+import React from "react";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import Typography from "@/components/typography";
+
+interface OrderItem {
+  id: string;
+  order_id: string;
+  menu_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+interface Order {
+  id: string;
+  user_id: string;
+  rest_id: string;
+  restaurant_name: string;
+  cafeteria_name: string;
+  items: OrderItem[];
+  total_price: number;
+  status: "ready" | "pending" | string;
+  pick_up_time: string;
+  created_at: string | null;
+}
+
+interface Props {
+  order: Order;
+  formatTime: (time: string) => string;
+}
+
+export default function OrderHistoryCard({ order, formatTime }: Props) {
+  const router = useRouter();
+
+  const handleQRPress = () => {
+    const firstItem = order.items[0];
+    if (firstItem) {
+      router.push({
+        pathname: "/pickup",
+        params: {
+          foodId: firstItem.menu_id,
+          foodName: firstItem.name,
+          shopId: order.rest_id,
+          shopName: order.restaurant_name,
+          slotTime: formatTime(order.pick_up_time),
+        },
+      });
+    }
+  };
+
+  return (
+    <View style={styles.orderCard}>
+      <View style={styles.orderCardLeft}>
+        <View style={[styles.orderImage, { backgroundColor: "#E0E0E0" }]} />
+      </View>
+
+      <View style={styles.orderCardMiddle}>
+        <Typography
+          size={20}
+          weight="bold"
+          style={styles.foodName}
+          numberOfLines={1}
+        >
+          {order.items[0]?.name}
+        </Typography>
+
+        <View style={styles.restaurantRow}>
+          <Ionicons name="storefront-outline" size={14} color="#E95D91" />
+          <Typography
+            size={14}
+            weight="medium"
+            style={styles.restaurantName}
+            numberOfLines={1}
+          >
+            {order.restaurant_name}
+          </Typography>
+        </View>
+
+        {order.items.length > 1 && (
+          <Typography size={12} style={styles.moreItems}>
+            +{order.items.length - 1} more
+          </Typography>
+        )}
+
+        <View style={styles.pickupRow}>
+          <Typography weight="medium" size={12} style={styles.pickupLabel}>
+            Pick-Up Time:{"  "}
+          </Typography>
+          <Typography fontType={3} weight="bold" size={16} style={styles.pickupValue}>
+            {formatTime(order.pick_up_time)}
+          </Typography>
+        </View>
+      </View>
+
+      <View style={styles.orderCardRight}>
+        <Typography size={20} weight="bold" style={styles.price}>
+          ฿ {order.total_price}
+        </Typography>
+
+        {order.status === "ready" && (
+        <TouchableOpacity style={styles.qrButton} onPress={handleQRPress}>
+            <Ionicons name="qr-code-sharp" size={38} color="#bcbcbc" />
+            {/* <Typography size={8} weight="medium" style={styles.qrLabel}>
+            Pick-Up QR
+            </Typography> */}
+        </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  orderCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#ebebeb",
+    elevation: 1,
+  },
+  orderCardLeft: {
+    marginRight: 12,
+  },
+  orderImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    backgroundColor: "#E0E0E0",
+  },
+  orderCardMiddle: {
+    flex: 1,
+    justifyContent: "flex-start",
+    gap: 3,
+  },
+  restaurantName: {
+    color: "#8f8f8f",
+    marginLeft: 6,
+    maxWidth: 140,
+  },
+  restaurantRow: {
+    bottom: 3,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  foodName: {
+    color: "#454545",
+  },
+  pickupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  pickupLabel: {
+    color: "#222222",
+  },
+  pickupValue: {
+    color: "#E95D91",
+  },
+  moreItems: {
+    color: "#999999",
+    marginBottom: 4,
+  },
+  orderCardRight: {
+    alignItems: "flex-end",
+    alignSelf: "flex-start",
+    marginLeft: 8,
+    gap: 8,
+  },
+  price: {
+    color: "#E95D91",
+  },
+  qrButton: {
+    alignItems: "flex-end",
+    borderRadius: 5,
+    backgroundColor: "#f0f0f063",
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    top: 5,
+    justifyContent: "space-between",
+    aspectRatio: 1,
+  },
+  qrLabel: {
+    color: "#A6A5A5",
+  },
+});
