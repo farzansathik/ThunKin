@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  Modal,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
@@ -30,6 +32,9 @@ export default function FoodScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedFoodName, setSelectedFoodName] = useState<string>("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [nextPageParams, setNextPageParams] = useState<any>(null);
+  const scaleAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     console.log("FoodScreen params:", { foodId, foodName, shopId, shopName, slotTime });
@@ -62,6 +67,31 @@ export default function FoodScreen() {
       setSelectedFoodName(foodItem.name);
     }
   }, [foodName, foodItem]);
+
+  useEffect(() => {
+    if (showSuccessPopup) {
+      Animated.sequence([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 12,
+          bounciness: 8,
+        }),
+      ]).start();
+
+      const timer = setTimeout(() => {
+        setShowSuccessPopup(false);
+        if (nextPageParams) {
+          router.push({
+            pathname: "/status",
+            params: nextPageParams,
+          });
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessPopup]);
 
   const logStatusChange = async (orderItemId: number, fromStatus: string | null, toStatus: string) => {
   const { error } = await supabase
@@ -142,18 +172,19 @@ export default function FoodScreen() {
       console.log("Order placed:", orderData);
       console.log("Order item:", orderItemData);
 
-      router.push({
-        pathname: "/status",
-        params: {
-          foodId,
-          foodName: selectedFoodName,
-          shopId,
-          shopName,
-          slotTime,
-          orderId: orderData.id,
-          orderItemId: orderItemData.id,  // ← pass this to status screen
-        },
-      });
+      // Show success popup and navigate after 2 seconds
+      const params = {
+        foodId,
+        foodName: selectedFoodName,
+        shopId,
+        shopName,
+        slotTime,
+        orderId: orderData.id,
+        orderItemId: orderItemData.id,
+      };
+
+      setNextPageParams(params);
+      setShowSuccessPopup(true);
 
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -237,6 +268,35 @@ export default function FoodScreen() {
           </Typography>
         </Pressable>
       </View>
+
+      {/* Success Popup Modal */}
+      <Modal
+        visible={showSuccessPopup}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.popupOverlay}>
+          <Animated.View
+            style={[
+              styles.successPopup,
+              { transform: [{ scale: scaleAnim }] },
+            ]}
+          >
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+              <View style={styles.checkmarkCircle}>
+                <Ionicons name="checkmark" size={60} color="#fff" />
+              </View>
+            </Animated.View>
+            <Typography size={24} weight="bold" style={styles.successText}>
+              Successfully Ordered!
+            </Typography>
+            <Typography fontType={2} size={14} style={styles.successSubtext}>
+              {selectedFoodName} from {shopName}
+            </Typography>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -406,5 +466,46 @@ const styles = StyleSheet.create({
 
   orderButtonText: {
     color: "#FFF",
+  },
+
+  /* Success Popup */
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  successPopup: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 30,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 10,
+  },
+
+  checkmarkCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#E95D91",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  successText: {
+    color: "#2D2D2D",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+
+  successSubtext: {
+    color: "#999",
+    textAlign: "center",
   },
 });

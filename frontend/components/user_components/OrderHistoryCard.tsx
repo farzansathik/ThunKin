@@ -45,6 +45,8 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
           shopId: order.rest_id,
           shopName: order.restaurant_name,
           slotTime: formatTime(order.pick_up_time),
+          orderId: order.id,       
+          orderItemId: firstItem.id, 
         },
       });
     }
