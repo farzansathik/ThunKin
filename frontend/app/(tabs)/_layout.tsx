@@ -7,10 +7,14 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 
 const ACTIVE_COLOR = "#FFFFFF";
 const INACTIVE_COLOR = "rgba(255,255,255,0.4)";
+const DisabledTab = (props: any) => (
+  <View {...props} pointerEvents="none" />
+);
 
 export default function TabLayout() {
   return (
     <Tabs
+      initialRouteName="reserve"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: ACTIVE_COLOR,
@@ -31,6 +35,7 @@ export default function TabLayout() {
               color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
             />
           ),
+          tabBarButton: (props) => <DisabledTab {...props} />, // ไม่่ใช้หน้านี้ เอามันออกชั่วคราวก่อน
         }}
       />
 
@@ -47,6 +52,7 @@ export default function TabLayout() {
               color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
             />
           ),
+          tabBarButton: (props) => <DisabledTab {...props} />, // ไม่่ใช้หน้านี้ เอามันออกชั่วคราวก่อน
         }}
       />
 

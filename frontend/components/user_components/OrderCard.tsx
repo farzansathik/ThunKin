@@ -26,10 +26,10 @@ export default function OrderCard({ foodItem }: OrderCardProps) {
         style={styles.itemImage}
       />
       <View style={styles.itemInfo}>
-        <Typography size={21} weight="bold" style={styles.itemName}>{foodItem?.name}</Typography>
-        <Typography size={13} style={styles.itemSub}>ไม่มีเพิ่มเติม</Typography>
+        <Typography size={20} weight="bold" style={styles.itemName}>{foodItem?.name}</Typography>
+        <Typography size={12} style={styles.itemSub}>ไม่มีเพิ่มเติม</Typography>
       </View>
-      <Typography fontType={1} weight="bold" size={24} style={styles.itemPrice}>
+      <Typography fontType={1} weight="bold" size={20} style={styles.itemPrice}>
         {foodItem ? `฿ ${foodItem.price}` : ""}
       </Typography>
     </View>
@@ -49,8 +49,8 @@ const styles = StyleSheet.create({
   },
 
   itemImage: {
-    width: 82,
-    height: 82,
+    width: 75,
+    height: 75,
     borderRadius: 12,
     marginRight: 12,
   },
