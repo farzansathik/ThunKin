@@ -3,16 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   Pressable,
   ScrollView,
   TouchableOpacity,
   StatusBar,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { supabase } from "../lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Typography from "@/components/typography";
+import OrderCard from "@/components/user_components/OrderCard";
 
 interface MenuItem {
   id: string;
@@ -26,12 +28,12 @@ export default function StatusScreen() {
     const router = useRouter();
     const { foodId, foodName, shopId, shopName, slotTime } = useLocalSearchParams();
     
-    // Debug logging
     console.log("StatusScreen params:", { foodId, foodName, shopId, shopName, slotTime });
     
     const [foodItem, setFoodItem] = useState<MenuItem | null>(null);
     const [shopItem, setShopItem] = useState(null);
     const [loading, setLoading] = useState(true);
+
     useEffect(() => {
         const fetchFood = async () => {
           if (!foodId) return;
@@ -55,7 +57,7 @@ export default function StatusScreen() {
       }, [foodId]);
 
       const returnHome = () => {
-        router.replace("/");
+        router.replace("/reserve");
       }
 
     return (
@@ -64,70 +66,54 @@ export default function StatusScreen() {
 
             {/* Header with pink background and title*/}
             <View style={styles.header}> 
-                <Typography style={styles.headerTitle}>Order Confirmed</Typography>
+                <Typography size={28} weight="bold" style={styles.headerTitle}>Order Confirmed</Typography>
             </View>
 
             {/* Content of the page*/}
             <View style={styles.content}>
                 <View style={styles.paymentCard}>
                     <View style={styles.paymentLeft}>
-                        <MaterialCommunityIcons
-                        name="credit-card-outline"
-                        size={28}
-                        color="#DE5B8E"
-                        />
-                        <Typography style={styles.paymentText}>Payment</Typography>
+                        <FontAwesome name="credit-card-alt" size={24} color="#E95D91" />
+                        <Typography size={23} weight="bold" style={styles.paymentText}> Payment</Typography>
                     </View>
 
                     <View style={styles.checkCircle}>
-                        <Ionicons name="checkmark" size={24} color="#fff" />
+                        <MaterialIcons name="check-circle" size={38} color="#81E687" />
                     </View>
                 </View>
 
                 <View style={styles.sectionTitleRow}>
                     <View style={styles.pinkBar} />
-                    <Typography style={styles.sectionTitle}>Order Summary</Typography>
+                    <Typography size={28} weight="bold" style={styles.sectionTitle}>Order Summary</Typography>
                 </View>
 
                 <View style={styles.summaryBox}>
-                    <Typography style={styles.pickupLabel}> Pick-Up Time</Typography>
-                    <Typography style={styles.pickupTime}>{slotTime}</Typography>
+                    <Typography weight="bold" size={16} style={styles.pickupLabel}>Pick-Up Time</Typography>
+                    <Typography fontType={3} weight="bold" size={26} style={styles.pickupTime}>{slotTime}</Typography>
 
                     <View style={styles.shopRow}>
-                        <Ionicons name="storefront-outline" size={20} color="#DE5B8E" />
-                        <Typography style={styles.shopName}>{shopName}</Typography>
+                        <Ionicons name="storefront-outline" size={25} color="#DE5B8E" />
+                        <Typography size={22} weight="bold" style={styles.shopName}>{shopName}</Typography>
                     </View> 
 
-                    <View style={styles.itemCard}>
-                        <Image 
-                            source={{ uri: foodItem?.image_url || `https://loremflickr.com/320/240/food?random=${foodItem?.id}` }} 
-                            style={styles.itemImage} 
-                        />
-                        <View style={styles.itemInfo}>
-                            <Typography style={styles.itemName}>{foodItem?.name}</Typography>
-                            <Typography style={styles.itemSub}>ไม่มีเพิ่มเติม</Typography>
-                        </View>
-                        <Typography style={styles.itemPrice}>{foodItem ? `฿${foodItem.price}` : ""}</Typography>
-
-                        <View style={styles.divider} />
-                    </View>
+                    <OrderCard foodItem={foodItem} />
 
                     <View style={styles.totalCard}>
                         <View style={styles.totalRow}>
-                            <Text style={styles.totalText}>Subtotal</Text>
-                            <Text style={styles.totalValue}>30</Text>
+                            <Typography  size={16}>Subtotal</Typography>
+                            <Typography  style={styles.totalValue}>{foodItem?.price}</Typography>
                         </View>
 
                         <View style={styles.totalRow}>
-                            <Text style={styles.totalText}>Discount</Text>
-                            <Text style={styles.discountValue}>0</Text>
+                            <Typography  size={16}>Discount</Typography>
+                            <Typography  style={styles.discountValue}>0</Typography>
                         </View>
 
                         <View style={styles.divider} />
 
                         <View style={styles.totalRow}>
-                            <Text style={styles.totalFinalText}>Total</Text>
-                            <Text style={styles.totalFinalValue}>30</Text>
+                            <Typography weight="medium" style={styles.totalFinalText}>Total</Typography>
+                            <Typography weight="medium" style={styles.totalFinalValue}>{foodItem?.price}</Typography>
                         </View>
                     </View>
                 </View>
@@ -135,21 +121,22 @@ export default function StatusScreen() {
 
             <View style={styles.bottomBar}>
                 <Pressable style={styles.homeButton} onPress={returnHome}>
-                    <Typography style={styles.homeButtonText}>Back to Home</Typography>
+                    <Typography size={26} weight="bold" style={styles.homeButtonText}>Back to Home</Typography>
                 </Pressable>
             </View>
 
-
-        </View>)
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "white" },
+
     header: {
-        height: 138,
-        backgroundColor: "#DE5B8E",
-        borderBottomLeftRadius: 26,
-        borderBottomRightRadius: 26,
+        height: 115,
+        backgroundColor: "#E95D91",
+        borderBottomLeftRadius: 22,
+        borderBottomRightRadius: 22,
         justifyContent: "flex-end",
         alignItems: "center",
         paddingBottom: 26,
@@ -161,262 +148,160 @@ const styles = StyleSheet.create({
     },
 
     headerTitle: {
-        fontSize: 28,
-        fontWeight: "800",
-        color: "#F4F4F4",
+        color: "#ffffff",
     },
 
     content: {
-    flex: 1,
-    paddingHorizontal: 22,
-    paddingTop: 26,
-  },
+        flex: 1,
+        paddingHorizontal: 22,
+        paddingTop: 26,
+    },
 
-  paymentCard: {
-    backgroundColor: "#EDEDED",
-    borderRadius: 14,
-    minHeight: 82,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+    // ── Payment card  ──
+    paymentCard: {
+        backgroundColor: "#f0f0f063",
+        borderRadius: 14,
+        minHeight: 82,
+        paddingHorizontal: 18,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderWidth: 1.5,
+        borderColor: "#E0E0E0",
+    },
 
-  paymentLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    paymentLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
 
-  paymentText: {
-    fontSize: 24,
-    fontWeight: "500",
-    color: "#4A4A4A",
-    marginLeft: 10,
-  },
+    paymentText: {
+        color: "#4A4A4A",
+        marginLeft: 10,
+    },
 
-  checkCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#72D97B",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    checkCircle: {
+        elevation: 5
+    },
 
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 14,
-  },
+    sectionTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 24,
+        marginBottom: 14,
+    },
 
-  pinkBar: {
-    width: 6,
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: "#DE5B8E",
-    marginRight: 14,
-  },
+    pinkBar: {
+        width: 6,
+        height: 30,
+        borderRadius: 2,
+        backgroundColor: "#E95D91",
+        marginRight: 14,
+    },
 
-  sectionTitle: {
-    fontSize: 28,
-    fontWeight: "500",
-    color: "#4A4A4A",
-  },
+    sectionTitle: {
+        color: "#454545",
+    },
 
-  summaryBox: {
-    borderRadius: 14,
-    padding: 12,
-    backgroundColor: "#EDEDED",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+    // ── Summary box ──
+    summaryBox: {
+        borderRadius: 14,
+        padding: 12,
+        backgroundColor: "#f0f0f063",
+        borderWidth: 1.5,
+        borderColor: "#E0E0E0",
+    },
 
-  pickupLabel: {
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 8,
-  },
+    pickupLabel: {
+        color: "#2D2D2D",
+        textAlign: "center",
+        elevation: 5
+    },
 
-  pickupTime: {
-    textAlign: "center",
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#E95D91",
-    marginTop: 4,
-    marginBottom: 16,
-  },
+    pickupTime: {
+        textAlign: "center",
+        color: "#E95D91",
+        marginTop: 2,
+        marginBottom: 15,
+        elevation: 5
+    },
 
-  shopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
+    shopRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 12,
+    },
 
-  shopName: {
-    marginLeft: 8,
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#4A4A4A",
-  },
+    shopName: {
+        marginLeft: 10,
+        top: 2,
+        color: "#454545",
+        elevation: 5
+    },
 
-   bottomBar: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 18,
-    backgroundColor: "#F5F5F5",
-  },
+    bottomBar: {
+        paddingHorizontal: 12,
+        paddingTop: 10,
+        paddingBottom: 18,
+        backgroundColor: "#F5F5F5",
+    },
 
-  homeButton: {
-    backgroundColor: "#DE5B8E",
-    borderRadius: 20,
-    paddingVertical: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
+    homeButton: {
+        marginHorizontal: 8,
+        marginTop: 4,
+        marginBottom: 12,
+        backgroundColor: "#DF5789",
+        borderRadius: 16,
+        paddingVertical: 16,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 4,
+    },
 
-  homeButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "800",
-  },
+    homeButtonText: {
+        color: "#fff",
+    },
 
-  itemCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+    divider: {
+        height: 1,
+        backgroundColor: "#C3C3C3",
+        marginVertical: 3,
+    },
 
-  itemImage: {
-    width: 82,
-    height: 82,
-    borderRadius: 12,
-    marginRight: 12,
-  },
+    // ── Total card: white fill, soft border ──
+    totalCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: "#E8E8E8",
+    },
 
-  itemInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
+    totalRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 4,
+    },
 
-  itemCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+    totalValue: {
+        color: "#111",
+    },
 
-  itemImage: {
-    width: 82,
-    height: 82,
-    borderRadius: 12,
-    marginRight: 12,
-  },
+    discountValue: {
+        color: "#1DBA45",
+    },
 
-  itemInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
+    totalFinalText: {
+        color: "#111",
+    },
 
-  itemName: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#4A4A4A",
-    marginBottom: 4,
-  },
-
-  itemSub: {
-    fontSize: 14,
-    color: "#A0A0A0",
-    fontWeight: "500",
-  },
-
-  itemPrice: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#DE5B8E",
-    marginLeft: 10,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#D9D9D9",
-    marginVertical: 2,
-  },
-
-  totalCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-
-  totalText: {
-    fontSize: 16,
-    color: "#222",
-    fontWeight: "500",
-  },
-
-  totalValue: {
-    fontSize: 16,
-    color: "#111",
-    fontWeight: "500",
-  },
-
-  discountValue: {
-    fontSize: 16,
-    color: "#1DBA45",
-    fontWeight: "500",
-  },
-
-  totalFinalText: {
-    fontSize: 17,
-    color: "#111",
-    fontWeight: "500",
-  },
-
-  totalFinalValue: {
-    fontSize: 17,
-    color: "#111",
-    fontWeight: "500",
-  },
+    totalFinalValue: {
+        color: "#111",
+    },
 });

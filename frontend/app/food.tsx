@@ -293,14 +293,14 @@ const styles = StyleSheet.create({
   },
 
   totalPrice: {
-    color: "#E15A8B",
+    color: "#E95D91",
   },
 
   orderButton: {
     marginHorizontal: 8,
     marginTop: 4,
     marginBottom: 12,
-    backgroundColor: "#DD5C92",
+    backgroundColor: "#DF5789",
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
