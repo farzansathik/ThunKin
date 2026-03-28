@@ -6,13 +6,13 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ScrollView,
   StatusBar,
   ActivityIndicator,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import TimeSlotCard from "@/components/user_components/TimeSlotCard";
+import RefreshableScrollView from "@/components/RefreshableScrollView";
 
 interface TimeSlot {
   time: string;
@@ -125,7 +125,11 @@ export default function TimeSlotScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#E95D91" style={{ marginTop: 50 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <RefreshableScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          onRefresh={generateAndFetchSlots}
+        >
           {timeGroups.map((group) => (
             <View key={group.hour} style={styles.hourSection}>
               <View style={styles.hourHeader}>
@@ -142,7 +146,7 @@ export default function TimeSlotScreen() {
               </View>
             </View>
           ))}
-        </ScrollView>
+        </RefreshableScrollView>
       )}
     </View>
   );

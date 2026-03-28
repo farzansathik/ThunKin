@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
-  ScrollView,
   StatusBar,
   ActivityIndicator,
   Animated,
@@ -13,6 +12,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { supabase } from "../../lib/supabase";
 import Typography from "@/components/typography";
+import RefreshableScrollView from "@/components/RefreshableScrollView";
 
 interface OrderItem {
   id: string;
@@ -50,7 +50,9 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(true);
 
   const pulseAnimReady = React.useRef(new Animated.Value(1)).current;
-  const spinAnimOngoing = React.useRef(new Animated.Value(0)).current;
+  // const spinAnimOngoing = React.useRef(new Animated.Value(0)).current;
+
+
 
   React.useEffect(() => {
     // Ready — pulse
@@ -71,21 +73,21 @@ export default function HistoryScreen() {
       ])
     ).start();
 
-    // Ongoing — spin
-    Animated.loop(
-      Animated.timing(spinAnimOngoing, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-      { iterations: -1 }
-    ).start();
+  //   // Ongoing — spin    ใส่เเล้ว lagged เลยยังไม่ใส่ดีกว่าของอันนี้
+  //   Animated.loop(
+  //     Animated.timing(spinAnimOngoing, {
+  //       toValue: 1,
+  //       duration: 1500,
+  //       useNativeDriver: true,
+  //     }),
+  //     { iterations: -1 }
+  //   ).start();
   }, []);
 
-  const spinOngoing = spinAnimOngoing.interpolate({
-    inputRange: [0, 0.99, 1],
-    outputRange: ["0deg", "356deg", "360deg"],
-  });
+  // const spinOngoing = spinAnimOngoing.interpolate({
+  //   inputRange: [0, 0.99, 1],
+  //   outputRange: ["0deg", "356deg", "360deg"],
+  // });
 
   useEffect(() => {
     fetchOrders();
@@ -343,9 +345,9 @@ export default function HistoryScreen() {
     return (
       <View>
         <View style={styles.sectionHeader}>
-          <Animated.View style={{ transform: [{ rotate: spinOngoing }], marginRight: 8 }}>
+          {/* <Animated.View style={{ transform: [{ rotate: spinOngoing }], marginRight: 8 }}> */}
             <MaterialCommunityIcons name="timer-sand" size={20} color="#888888" />
-          </Animated.View>
+          {/* </Animated.View> */}
           <Typography size={16} weight="bold" style={styles.sectionTitle}>
             Ongoing
           </Typography>
@@ -407,23 +409,39 @@ export default function HistoryScreen() {
         </Typography>
       </View>
 
-      <ScrollView
+      <RefreshableScrollView
         style={styles.content}
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onRefresh={fetchOrders}
       >
         <View style={styles.topPadding} />
 
-        {/* Recent Orders label */}
-        <View style={styles.recentOrdersLabel}>
-          <View style={styles.pinkBarLarge} />
-          <Typography size={28} weight="bold" style={styles.recentTitle}>
-            Recent Orders
-          </Typography>
-        </View>
+        {/* Recent Orders section always shown if history exists or if recent exists */}
+        {(orders.ready.length > 0 || orders.pending.length > 0 || 
+          Object.entries(orders).some(([key]) => key !== "ready" && key !== "pending" && orders[key].length > 0)) ? (
+          <>
+            {/* Recent Orders label */}
+            <View style={styles.recentOrdersLabel}>
+              <View style={styles.pinkBarLarge} />
+              <Typography size={28} weight="bold" style={styles.recentTitle}>
+                Recent Orders
+              </Typography>
+            </View>
 
-        {renderReadySection(orders.ready)}
-        {renderOngoingSection(orders.pending)}
+            {orders.ready.length > 0 || orders.pending.length > 0 ? (
+              <>
+                {renderReadySection(orders.ready)}
+                {renderOngoingSection(orders.pending)}
+              </>
+            ) : (
+              <View style={styles.noRecentOrdersContainer}>
+                <Typography size={16} weight="medium" style={styles.noRecentOrdersText}>
+                  No Recent Orders
+                </Typography>
+              </View>
+            )}
+          </>
+        ) : null}
 
         {/* History Orders section */}
         {Object.entries(orders).filter(
@@ -455,7 +473,7 @@ export default function HistoryScreen() {
         )}
 
         <View style={styles.bottomPadding} />
-      </ScrollView>
+      </RefreshableScrollView>
     </View>
   );
 }
@@ -497,6 +515,7 @@ const styles = StyleSheet.create({
   recentOrdersLabel: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 6,
     marginBottom: 12,
   },
   pinkBarLarge: {
@@ -509,6 +528,17 @@ const styles = StyleSheet.create({
   recentTitle: {
     color: "#454545",
     marginLeft: 4
+  },
+  noRecentOrdersContainer: {
+    marginVertical: 16,
+    paddingVertical: 20,
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+    borderRadius: 12,
+    marginHorizontal: 12,
+  },
+  noRecentOrdersText: {
+    color: "#999999",
   },
   historyOrdersLabel: {
     flexDirection: "row",
