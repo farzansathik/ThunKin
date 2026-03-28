@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,8 +7,10 @@ import {
 } from "react-native";
 import { FontAwesome6, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Typography from "../typography";
+import { supabase } from "../../lib/supabase";
 
 type CafeteriaItem = {
+  id: string;
   location_name: string;
   name: string;
   status: string;
@@ -19,9 +21,12 @@ type CafeteriaItem = {
 type Props = {
   item: CafeteriaItem;
   onPress: () => void;
+  onFavoritePress: () => void;
 };
 
-export default function CafeteriaSelectCard({ item, onPress }: Props) {
+export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: Props) {
+  const [isFavorite, setIsFavorite] = useState(item.favorite ?? false);
+
 // if real data from database is missing any of these fields, use default values to avoid crashes
   const isOpen = item.status;
   const formatTime = (time: string) => time.slice(0, 5);
@@ -31,7 +36,29 @@ export default function CafeteriaSelectCard({ item, onPress }: Props) {
   const distMeters = "0";
   const name = item.name ?? "โรงอาหาร";
   const locationName = item.location_name ?? "ไม่มีชื่อสถานที่";
-  const favorite = item.favorite ?? false; // didnt do yet
+
+  const handleFavoritePress = async () => {
+    const newFavoriteState = !isFavorite;
+    setIsFavorite(newFavoriteState);
+    onFavoritePress();
+
+    // Update database
+    try {
+      const { error } = await supabase
+        .from("cafeteria")
+        .update({ favorite: newFavoriteState })
+        .eq("id", item.id);
+
+      if (error) {
+        console.error("Error updating favorite:", error);
+        // Revert state if update fails
+        setIsFavorite(!newFavoriteState);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setIsFavorite(!newFavoriteState);
+    }
+  }
 
   // Hide card if closed (อันที่ปิดเราจะไม่โชว์เลย)
   if (!isOpen) return null;
@@ -73,7 +100,14 @@ export default function CafeteriaSelectCard({ item, onPress }: Props) {
           <Typography fontType={3} weight="bold" size={16} color="#888888">
             {openTime} - {closeTime}
           </Typography>
-          <FontAwesome6 name="heart" size={16} color="#DF5789" style={{ marginLeft: 8 }} />
+          <TouchableOpacity onPress={handleFavoritePress} style={{ marginLeft: 8 }}>
+            <FontAwesome6
+              name="heart"
+              size={16}
+              color="#DF5789"
+              solid={isFavorite}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -95,7 +129,7 @@ export default function CafeteriaSelectCard({ item, onPress }: Props) {
             </View>
         </View>
     </TouchableOpacity>
-  );
+  )
 }
 
 const styles = StyleSheet.create({

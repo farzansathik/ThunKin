@@ -24,6 +24,7 @@ export default function ReserveScreen() {
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isFavoriteMode, setIsFavoriteMode] = useState(false);
 
   const fetchLocations = async () => {
     const { data, error } = await supabase
@@ -45,9 +46,18 @@ export default function ReserveScreen() {
     fetchLocations();
   }, []);
 
-  const filteredData = locations.filter((item) =>
-    (item.location_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredData = locations.filter((item) => {
+    // Search filter: search for location_name or name in Thai and English
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      (item.location_name || "").toLowerCase().includes(searchLower) ||
+      (item.name || "").toLowerCase().includes(searchLower);
+
+    // Favorite mode filter: only show if favorite is true
+    const matchesFavoriteFilter = isFavoriteMode ? item.favorite === true : true;
+
+    return matchesSearch && matchesFavoriteFilter;
+  });
 
   return (
     <View style={styles.container}>
@@ -83,8 +93,8 @@ export default function ReserveScreen() {
                 onChangeText={setSearchQuery}
                 placeholderTextColor="#757575"
               />
-              <TouchableOpacity>
-                <FontAwesome6 name="heart" size={18} color="#616161" />
+              <TouchableOpacity onPress={() => setIsFavoriteMode(!isFavoriteMode)}>
+                <FontAwesome6 name="heart" size={18} color={isFavoriteMode ? "#E95D91" : "#616161"} solid={isFavoriteMode} />
               </TouchableOpacity>
             </View>
 
@@ -116,6 +126,14 @@ export default function ReserveScreen() {
                     params: { cafeId: item.id },
                   })
                 }
+                onFavoritePress={() => {
+                  // Update the local state
+                  setLocations((prevLocations) =>
+                    prevLocations.map((loc) =>
+                      loc.id === item.id ? { ...loc, favorite: !loc.favorite } : loc
+                    )
+                  );
+                }}
               />
             )}
           />
