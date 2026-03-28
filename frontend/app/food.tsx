@@ -63,6 +63,18 @@ export default function FoodScreen() {
     }
   }, [foodName, foodItem]);
 
+  const logStatusChange = async (orderItemId: number, fromStatus: string | null, toStatus: string) => {
+  const { error } = await supabase
+    .from("order_items_logs")
+    .insert({
+      order_item_id: orderItemId,
+      from_status: fromStatus,
+      to_status: toStatus,
+    });
+
+    if (error) console.error("Log insert failed:", error);
+  };
+
   const placeOrder = async () => {
     if (!foodItem) {
       Alert.alert("Error", "Food item not loaded yet.");
@@ -78,22 +90,20 @@ export default function FoodScreen() {
       setIsPlacingOrder(true);
 
       const slotString = String(slotTime);
-      const startTime = slotString.split(" - ")[0].trim(); // "11:20"
+      const startTime = slotString.split(" - ")[0].trim();
       const today = new Date();
-
-      // Build datetime string manually — no UTC conversion
       const year = today.getFullYear();
       const month = String(today.getMonth() + 1).padStart(2, "0");
       const day = String(today.getDate()).padStart(2, "0");
+      const pickUpDateTime = `${year}-${month}-${day}T${startTime}:00`;
 
-      const pickUpDateTime = `${year}-${month}-${day}T${startTime}:00`; // "2026-03-28T11:20:00"
-
-      const {data: orderData, error: orderError } = await supabase
+      // Step 1 — Insert into orders
+      const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: userId,
           total_price: foodItem.price,
-          status: "completed",
+          status: "pending",        // ← changed from "completed" to "pending"
           pick_up_time: pickUpDateTime,
         })
         .select()
@@ -105,42 +115,60 @@ export default function FoodScreen() {
         return;
       }
 
-      console.log("Order placed successfully:", orderData);
-
-      // Insert into order_items linked to the new order
+      // Step 2 — Insert into order_items
       const { data: orderItemData, error: orderItemError } = await supabase
         .from("order_items")
         .insert({
-          order_id: orderData.id,       // links to orders.id
-          menu_id: Number(foodId),      // links to menu.id
-          rest_id: Number(shopId),      // links to restaurant.id
-          price: foodItem.price,        // original price
-          final_price: foodItem.price,  // same for now, change if add-ons are added
+          order_id: orderData.id,
+          menu_id: Number(foodId),
+          rest_id: Number(shopId),
+          price: foodItem.price,
+          final_price: foodItem.price,
           quantity: 1,
-          status: "completed",
+          status: "pending",        // ← start as pending
         })
         .select()
         .single();
 
       if (orderItemError) {
         console.error("Order item insert failed:", orderItemError);
-        Alert.alert("Error", "Order created but item details failed. Please contact support.");
+        Alert.alert("Error", "Order created but item details failed.");
         return;
       }
 
-      console.log("Order item created:", orderItemData);
+      // Step 3 — Log the first status: null → "pending"
+      await logStatusChange(orderItemData.id, null, "pending");
+
+      console.log("Order placed:", orderData);
+      console.log("Order item:", orderItemData);
 
       router.push({
         pathname: "/status",
-        params: { foodId, foodName: selectedFoodName, shopId, shopName, slotTime, orderId: orderData.id },
+        params: {
+          foodId,
+          foodName: selectedFoodName,
+          shopId,
+          shopName,
+          slotTime,
+          orderId: orderData.id,
+          orderItemId: orderItemData.id,  // ← pass this to status screen
+        },
       });
+
     } catch (err) {
-      console.error("Unexpected error placing order:", err);
+      console.error("Unexpected error:", err);
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {
       setIsPlacingOrder(false);
     }
   };
+
+
+// **หลักการทำงานน่าจะประมาณนี้**
+
+// User places order   → null        to "pending"    (logged in food.tsx now)
+// Vendor sees order   → "pending"   to "ready"      (logged in vendor screen later)
+// User picks up       → "ready"     to "picked_up"  (logged in status screen later)
 
   return (
     <View style={styles.container}>

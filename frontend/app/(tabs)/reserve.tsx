@@ -302,49 +302,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  /* ── DISTANCE BOX ── */
-  distanceContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  distanceBox: {
-    width: 62,
-    height: 62,
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#F0F0F0",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  distValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  distNum: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: "#E95D91",
-    marginRight: 1,
-  },
-  minLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#555",
-    marginTop: -2,
-  },
-  meterText: {
-    fontSize: 9,
-    color: "#BBB",
-    marginTop: 5,
-    fontWeight: "500",
-  },
-
   /* ── QUICK ORDER ── */
   quickOrderFloatingBtn: {
     position: "absolute",
