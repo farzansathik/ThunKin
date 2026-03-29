@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -36,6 +36,10 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
   const distMeters = "0";
   const name = item.name ?? "โรงอาหาร";
   const locationName = item.location_name ?? "ไม่มีชื่อสถานที่";
+
+  useEffect(() => {
+    setIsFavorite(item.favorite ?? false);
+  }, [item.favorite]);
 
   const handleFavoritePress = async () => {
     const newFavoriteState = !isFavorite;

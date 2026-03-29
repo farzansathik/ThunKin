@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View, Image, TouchableOpacity, Dimensions } from "react-native";
 import { supabase } from "../../lib/supabase"; 
+import { Redirect } from "expo-router";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 60) / 2; // Modern 2-column calculation
 
+
+
 export default function HomeScreen() {
+  return <Redirect href="/(tabs)/reserve" />;   // Redirect to the reserve tab as the main landing page for now ( i dont want home page yet)
   const [email, setEmail] = useState("Loading...");
 
   useEffect(() => {
