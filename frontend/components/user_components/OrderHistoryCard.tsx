@@ -23,6 +23,7 @@ interface Order {
   total_price: number;
   status: "ready" | "pending" | string;
   pick_up_time: string;
+  ready_time?: string;
   created_at: string | null;
 }
 
@@ -94,6 +95,17 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
             {formatTime(order.pick_up_time)}
           </Typography>
         </View>
+
+        {order.ready_time && (
+          <View style={styles.pickupRow}>
+            <Typography weight="medium" size={12} style={styles.pickupLabel}>
+              Ready:{"  "}
+            </Typography>
+            <Typography fontType={3} weight="bold" size={16} style={styles.readyValue}>
+              {formatTime(order.ready_time)}
+            </Typography>
+          </View>
+        )}
       </View>
 
       <View style={styles.orderCardRight}>
@@ -188,5 +200,8 @@ const styles = StyleSheet.create({
   },
   qrLabel: {
     color: "#A6A5A5",
+  },
+  readyValue: {
+    color: "#1DBA45",  // green to visually distinguish from pickup time
   },
 });
