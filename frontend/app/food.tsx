@@ -127,44 +127,33 @@ export default function FoodScreen() {
       const day = String(today.getDate()).padStart(2, "0");
       const pickUpDateTime = `${year}-${month}-${day}T${startTime}:00`;
 
-      // Step 1 — Insert into orders
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: userId,
-          total_price: foodItem.price,
-          status: "pending",        // ← changed from "completed" to "pending"
-          pick_up_time: pickUpDateTime,
-        })
-        .select()
-        .single();
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "create_order_if_slot_available",
+        {
+          p_rest_id:      Number(shopId),
+          p_pick_up_time: pickUpDateTime,
+          p_user_id:      userId,
+          p_menu_id:      Number(foodId),
+          p_price:        foodItem.price,
+        }
+      );
 
-      if (orderError) {
-        console.error("Order insert failed:", orderError);
+      if (rpcError) {
+        console.error("RPC failed:", rpcError);
         Alert.alert("Error", "Failed to place order. Please try again.");
         return;
       }
 
-      // Step 2 — Insert into order_items
-      const { data: orderItemData, error: orderItemError } = await supabase
-        .from("order_items")
-        .insert({
-          order_id: orderData.id,
-          menu_id: Number(foodId),
-          rest_id: Number(shopId),
-          price: foodItem.price,
-          final_price: foodItem.price,
-          quantity: 1,
-          status: "pending",        // ← start as pending
-        })
-        .select()
-        .single();
-
-      if (orderItemError) {
-        console.error("Order item insert failed:", orderItemError);
-        Alert.alert("Error", "Order created but item details failed.");
+      if (!rpcData.success) {
+        Alert.alert(
+          "Time Slot Full",
+          "Someone just took the last spot in this time slot. Please go back and choose another."
+        );
         return;
       }
+
+      const orderData     = { id: rpcData.order_id };
+      const orderItemData = { id: rpcData.order_item_id };
 
       // Step 3 — Log the first status: null → "pending"
       await logStatusChange(orderItemData.id, null, "pending");
