@@ -1,31 +1,239 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
+  Alert,
+  Image,
 } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import Typography from "@/components/typography";
-import TimeSlotCard, { FoodItem } from "@/components/vendor_components/Timeslotcard";  // น่าจะ bugged อย่าไปปรับเป็น non capital letter ตาม suggest เพราะมันจะหาย error เเต่โค้ดมันจะไม่เรียก script นั้น
-import ShelfBottomSheet from "@/components/vendor_components/ShelfBottomSheet";      
+import OrderInTimeSlot, { FoodItem } from "@/components/vendor_components/OrderInTimeSlot";
+import ShelfBottomSheet from "@/components/vendor_components/ShelfBottomSheet";
 import AvailableSpaceButton from "@/components/vendor_components/AvailableSpaceButton";
-
-import { Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../lib/supabase";
+import { useUser } from "../context/UserContext";
 
 type Column = {
   time: string;
   items: FoodItem[];
-  isActive?: boolean; 
+  isActive?: boolean;
 };
+
+// Must match columnWrapper width + marginRight in OrderInTimeSlot.tsx
+const COLUMN_WIDTH = 320 + 16;
 
 export default function Vendor() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shelfBottomSheetOpen, setShelfBottomSheetOpen] = useState(false);
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [vendorName, setVendorName] = useState("");
+  const { restId } = useUser();
   const router = useRouter();
+
+  const scrollRef = useRef<ScrollView>(null);
+  const activeIndexRef = useRef<number>(-1);
+  const nextOrderIndexRef = useRef<number>(-1);
+  const [jumpedToOrder, setJumpedToOrder] = useState(false);
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (restId) fetchOrders();
+  }, [restId]);
+
+  const fetchOrders = useCallback(async () => {
+    if (!restId) return;
+
+    // 1. Fetch restaurant info
+    const { data: restData, error: restError } = await supabase
+      .from("restaurant")
+      .select("open_time, close_time, vendor_name")
+      .eq("id", restId)
+      .single();
+
+    if (restError || !restData) {
+      console.error("Failed to fetch restaurant:", restError);
+      return;
+    }
+
+    setVendorName(restData.vendor_name ?? "");
+
+    // 2. Generate ALL 10-min slots between open and close
+    const allSlots = generateSlots(restData.open_time, restData.close_time);
+
+    // 3. Fetch today's order_items
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const { data: orderItems, error: orderError } = await supabase
+      .from("order_items")
+      .select(`
+        id,
+        quantity,
+        orders!inner ( pick_up_time ),
+        menu!inner ( name )
+      `)
+      .eq("rest_id", restId)
+      .gte("orders.pick_up_time", todayStart.toISOString())
+      .lte("orders.pick_up_time", todayEnd.toISOString());
+
+    if (orderError) {
+      console.error("Failed to fetch orders:", orderError);
+      return;
+    }
+
+    // 4. Group orders by 10-min slot key
+    const grouped: Record<string, FoodItem[]> = {};
+
+    (orderItems || []).forEach((item: any) => {
+      const pickUpTime = new Date(item.orders.pick_up_time);
+      const slotKey = toSlotKey(pickUpTime);
+      if (!grouped[slotKey]) grouped[slotKey] = [];
+
+      const existing = grouped[slotKey].find(f => f.name === item.menu.name);
+      if (existing) {
+        existing.qty += item.quantity;
+      } else {
+        grouped[slotKey].push({ name: item.menu.name, qty: item.quantity });
+      }
+    });
+
+    // ── DEBUG: force current time to test isActive ─────────────────────
+    const now = new Date(); now.setHours(6, 30, 0, 0);  // ← force 06:30
+    // const now = new Date(); now.setHours(11, 25, 0, 0); // ← force 11:25
+    // ──────────────────────────────────────────────────────────────────
+    // const now = new Date(); // ← real time (comment out when debugging above)
+
+    // 5. Build columns with correct visibility rules:
+    //
+    //    SHOW if ANY of these are true:
+    //      - Slot is currently active (now is within this window)
+    //      - Slot is in the future (startDate > now) — even if empty
+    //      - Slot is past BUT has orders (vendor may still need to prep)
+    //
+    //    HIDE only when:
+    //      - Slot is fully past AND has no orders
+    const builtColumns: Column[] = [];
+    let foundActiveIndex = -1;
+    let foundNextOrderIndex = -1;
+
+    allSlots.forEach(({ start, end, startDate }) => {
+      const slotEndDate = new Date(startDate);
+      slotEndDate.setMinutes(slotEndDate.getMinutes() + 10);
+
+      const isActive = now >= startDate && now < slotEndDate;
+      const isFutureOrCurrent = startDate >= now || isActive;
+      const hasOrders = !!(grouped[start] && grouped[start].length > 0);
+      const isPastWithOrders = slotEndDate <= now && hasOrders;
+
+      // Only skip: fully past + no orders
+      if (!isFutureOrCurrent && !isPastWithOrders) return;
+
+      const colIndex = builtColumns.length;
+
+      if (isActive) foundActiveIndex = colIndex;
+
+      // Next slot AFTER active that has orders
+      if (
+        foundActiveIndex >= 0 &&
+        colIndex > foundActiveIndex &&
+        hasOrders &&
+        foundNextOrderIndex === -1
+      ) {
+        foundNextOrderIndex = colIndex;
+      }
+
+      builtColumns.push({
+        time: `${start} - ${end}`,
+        items: grouped[start] ?? [],
+        isActive,
+      });
+    });
+
+    activeIndexRef.current = foundActiveIndex;
+    nextOrderIndexRef.current = foundNextOrderIndex;
+    setColumns(builtColumns);
+  }, [restId]);
+
+  const jumpToActive = () => {
+    const idx = activeIndexRef.current;
+    if (idx < 0) return;
+    scrollRef.current?.scrollTo({ x: idx * COLUMN_WIDTH, animated: true });
+    setJumpedToOrder(false);
+  };
+
+  const jumpToNextOrder = () => {
+    if (jumpedToOrder) {
+      jumpToActive();
+      return;
+    }
+    const idx = nextOrderIndexRef.current;
+    if (idx < 0) return;
+    scrollRef.current?.scrollTo({ x: idx * COLUMN_WIDTH, animated: true });
+    setJumpedToOrder(true);
+  };
+
+  const generateSlots = (openTime: string, closeTime: string) => {
+    const slots: { start: string; end: string; startDate: Date }[] = [];
+    const today = new Date();
+
+    const [openH, openM] = openTime.split(":").map(Number);
+    const [closeH, closeM] = closeTime.split(":").map(Number);
+
+    const cursor = new Date(today);
+    cursor.setHours(openH, openM + 30, 0, 0); // 30 min after open
+
+    const closeDate = new Date(today);
+    closeDate.setHours(closeH, closeM - 30, 0, 0); // 30 min before close
+
+    while (cursor < closeDate) {
+      const startStr = formatTime(cursor);
+      const next = new Date(cursor);
+      next.setMinutes(next.getMinutes() + 10);
+      const endStr = formatTime(next);
+
+      slots.push({
+        start: startStr,
+        end: endStr,
+        startDate: new Date(cursor),
+      });
+
+      cursor.setMinutes(cursor.getMinutes() + 10);
+    }
+
+    return slots;
+  };
+
+  const formatTime = (date: Date) => {
+    const h = String(date.getHours()).padStart(2, "0");
+    const m = String(date.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  };
+
+  const toSlotKey = (date: Date) => {
+    const h = String(date.getHours()).padStart(2, "0");
+    const m = String(Math.floor(date.getMinutes() / 10) * 10).padStart(2, "0");
+    return `${h}:${m}`;
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(w => w[0]?.toUpperCase() ?? "")
+      .join("")
+      .slice(0, 2) || "V";
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -42,65 +250,15 @@ export default function Vendor() {
     );
   };
 
-  useEffect(() => {
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    return () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
-    };
-  }, []);
-
-  // ─── Replace this with ur real DB data later ───── (เวลาเมนูอาหารมาเยอะ สามารถ scroll ลงล่างได้)
-  // ตอนทำ sync กับเวลาจริง คิดว่าควรจะใส่กรอบเวลา highlight สีต่างหากอีกที เพื่อให้แยกออกจากกรอบเวลาอื่นๆ ได้ง่ายๆ จะได้รู้ว่าอยู่ในช่วงเวลาไหนอยู่
-  const columns: Column[] = [
-    {
-      time: "09:30 - 09:40",
-      items: [
-        { name: "ข้าวเหนียวไก่ทอด", qty: 3 },
-        { name: "ข้าวเหนียวหมู", qty: 2 },
-        { name: "ข้าวเหนียวไก่", qty: 1 },
-        { name: "ข้าวสวย", qty: 0 },
-      ],
-      isActive: true, // ใช้สำหรับ mark ว่า column ไหนคือช่วงเวลาปัจจุบัน (รอ link กับ real time เเต่ตอนนี้ขอ hard code ไว้ก่อน)
-    },
-    {
-      time: "09:40 - 09:50",
-      items: [
-        { name: "ข้าวไข่ดาว", qty: 4 },
-        { name: "ข้าวไข่เจียว", qty: 3 },
-        { name: "ไก่ทอด", qty: 1 },
-      ],
-      isActive: true,
-    },
-    {
-      time: "09:50 - 10:00",
-      items: [
-        { name: "ข้าวไข่ดาว", qty: 4 },
-        { name: "ข้าวไข่เจียว", qty: 3 },
-        { name: "ไก่ทอด", qty: 1 },
-      ],
-    },
-    {
-      time: "10:00 - 10:10",
-      items: [], // in case no orders in this time slot, time slot will still show up but with empty card (เเต่สำหรับเวลาที่ผ่านมาเเล้วควรจะเอาออกเลย)
-    },
-    {
-      time: "10:10 - 10:20",
-      items: [
-        { name: "ข้าวเหนียวไก่ทอด", qty: 3 },
-        { name: "ข้าวเหนียวหมู", qty: 2 },
-        { name: "ข้าวเหนียวไก่", qty: 1 },
-      ],
-    }
-  ];
-  // ─────────────────────────────────────────────────────────────────────────
-
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={styles.container}>
-        {/* Sidebar */}
+
+        {/* ── Sidebar ──────────────────────────────────────── */}
         <View style={[styles.sidebar, !sidebarOpen && styles.sidebarClosed]}>
+
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={() => setSidebarOpen(!sidebarOpen)}
@@ -114,52 +272,59 @@ export default function Vendor() {
             <>
               <View style={styles.logoRow}>
                 <View style={styles.verticalLine} />
-                
                 <Typography weight="bold" size={36} color="#fff" style={styles.logo}>
                   Queue
                 </Typography>
               </View>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={20} color="#fff">Order Control</Typography>
+                <Typography weight="regular" size={20} color="#fff">
+                  Order Control
+                </Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={20} color="#fff">Dashboard</Typography>
+                <Typography weight="regular" size={20} color="#fff">
+                  Dashboard
+                </Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={20} color="#fff">History</Typography>
+                <Typography weight="regular" size={20} color="#fff">
+                  History
+                </Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={20} color="#fff">Wallet</Typography>
+                <Typography weight="regular" size={20} color="#fff">
+                  Wallet
+                </Typography>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem}>
-                <Typography weight="regular" size={20} color="#fff">QR Reader</Typography>
+                <Typography weight="regular" size={20} color="#fff">
+                  QR Reader
+                </Typography>
               </TouchableOpacity>
             </>
           )}
 
-          {/* Spacer to push profile to bottom */}
           <View style={styles.spacer} />
 
-          {/* Bottom Profile */}
+          {/* Bottom profile */}
           {sidebarOpen ? (
             <View style={styles.profileRow}>
-              {/* Avatar — tap to log out */}
               <TouchableOpacity onPress={handleLogout}>
                 <View style={styles.avatar}>
-                  <Typography weight="bold" size={16} color="#E15284">
-                      TD {/* change to real initials for log in later */}
+                  <Typography weight="bold" size={14} color="#E15284">
+                    {getInitials(vendorName)}
                   </Typography>
                 </View>
               </TouchableOpacity>
 
               <View style={styles.profileText}>
                 <Typography weight="bold" size={15} color="#fff">
-                  Thanatat_D {/* change to real name for log in later (อย่าลืมเปลี่ยนตัวย่อโปรไฟล์สองจุดด้วย) */}
+                  {vendorName || "Vendor"}
                 </Typography>
                 <Typography weight="regular" size={12} color="rgba(255,255,255,0.7)">
                   Vendor
@@ -171,39 +336,108 @@ export default function Vendor() {
               <TouchableOpacity onPress={handleLogout}>
                 <View style={styles.avatar}>
                   <Typography weight="bold" size={14} color="#E15284">
-                    TD {/* change to real initials for log in later */}
+                    {getInitials(vendorName)}
                   </Typography>
                 </View>
               </TouchableOpacity>
             </View>
           )}
+
         </View>
 
-        {/* Main Dashboard */}
-        <ScrollView
-          horizontal
-          style={styles.main}
-          contentContainerStyle={styles.mainContent}
-          showsHorizontalScrollIndicator={false}
-        >
-          {columns.map((col, index) => (
-            <TimeSlotCard
-              key={index}
-              time={col.time}
-              items={col.items}
-              isActive={col.isActive}
-            />
-          ))}
-        </ScrollView>
+        {/* ── Right panel ───────────────────────────────────── */}
+        <View style={styles.rightPanel}>
 
-        {/* Available Space Button - Bottom Right */}
+          {/* Top bar */}
+          <View style={styles.topBar}>
+
+            {/* Jump buttons on the left */}
+            <View style={styles.topBarButtons}>
+
+              <TouchableOpacity
+                style={styles.topBarButton}
+                onPress={jumpToActive}
+              >
+                <Ionicons name="time-outline" size={18} color="#E15284" />
+                <Typography
+                  weight="medium"
+                  size={14}
+                  color="#E15284"
+                  style={styles.topBarButtonText}
+                >
+                  Now
+                </Typography>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.topBarButton,
+                  jumpedToOrder && styles.topBarButtonActive,
+                ]}
+                onPress={jumpToNextOrder}
+                disabled={nextOrderIndexRef.current < 0}
+              >
+                <Ionicons
+                  name={jumpedToOrder ? "arrow-back-outline" : "arrow-forward-outline"}
+                  size={18}
+                  color={
+                    jumpedToOrder ? "#fff"
+                    : nextOrderIndexRef.current < 0 ? "#CCC"
+                    : "#E15284"
+                  }
+                />
+                <Typography
+                  weight="medium"
+                  size={14}
+                  color={
+                    jumpedToOrder ? "#fff"
+                    : nextOrderIndexRef.current < 0 ? "#CCC"
+                    : "#E15284"
+                  }
+                  style={styles.topBarButtonText}
+                >
+                  {jumpedToOrder ? "Back to Now" : "Next Order"}
+                </Typography>
+              </TouchableOpacity>
+
+            </View>
+
+            {/* Logo on the far right */}
+            <Image
+              source={require("../assets/images/Thunkin_images/THUNKIN_logo_black.png")}
+              style={styles.topBarLogo}
+              resizeMode="contain"
+            />
+
+          </View>
+
+          {/* Main horizontal scroll */}
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            style={styles.main}
+            contentContainerStyle={styles.mainContent}
+            showsHorizontalScrollIndicator={false}
+          >
+            {columns.map((col, index) => (
+              <OrderInTimeSlot
+                key={index}
+                time={col.time}
+                items={col.items}
+                isActive={col.isActive}
+              />
+            ))}
+          </ScrollView>
+
+        </View>
+
         <AvailableSpaceButton onPress={() => setShelfBottomSheetOpen(true)} />
- 
-        {/* Shelf Bottom Sheet */}
+
         <ShelfBottomSheet
           isVisible={shelfBottomSheetOpen}
           onClose={() => setShelfBottomSheetOpen(false)}
         />
+
       </View>
     </>
   );
@@ -267,22 +501,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
 
-  main: {
-    flex: 1,
-    backgroundColor: "#eaecf0",
-  },
-
-  mainContent: {
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-
   spacer: {
     flex: 0.9,
   },
 
-  // Profile section at the bottom
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -291,14 +513,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.25)",
   },
- 
+
   avatarOnly: {
     alignItems: "center",
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.25)",
   },
- 
+
   avatar: {
     paddingLeft: 4,
     width: 40,
@@ -308,47 +530,72 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
- 
+
   profileText: {
     flex: 1,
   },
 
-  // Modal Styles
-  modalOverlay: {
+  // ── Right panel ──────────────────────────────────────────
+  rightPanel: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  modalContent: {
-    width: "90%",
-    height: "90%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    overflow: "hidden",
     flexDirection: "column",
   },
 
-  modalHeader: {
+  // ── Top bar ──────────────────────────────────────────────
+  topBar: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 8,
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: "#E8E8E8",
   },
 
-  closeButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
+  topBarButtons: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 10,
   },
 
-  gridScrollView: {
+  topBarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#E15284",
+    backgroundColor: "#fff",
+  },
+
+  topBarButtonActive: {
+    backgroundColor: "#E15284",
+    borderColor: "#E15284",
+  },
+
+  topBarButtonText: {
+    letterSpacing: 0.2,
+  },
+
+  topBarLogo: {
+    height: "160%",
+    width: 130,
+    marginBottom: 4,
+    opacity: 0.8,
+  },
+
+  // ── Main scroll ──────────────────────────────────────────
+  main: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#eaecf0",
+  },
+
+  mainContent: {
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
 });
