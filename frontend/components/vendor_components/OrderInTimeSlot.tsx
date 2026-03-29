@@ -44,65 +44,70 @@ export default function OrderInTimeSlot({
         />
       </View>
 
-      {/* Card container */}
-      <View style={[styles.column, isActive && styles.activeColumn]}>
+      {/* Pink border shell — toggling this never affects inner layout */}
+      <View style={[styles.shell, isActive && styles.activeShell]}>
 
-        {isEmpty ? (
-          // ── No orders state ──────────────────────────────
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="alert-circle-outline"
-              size={26}
-              color="#C0C0C0"
-            />
-            <Typography
-              weight="medium"
-              size={18}
-              color="#C0C0C0"
-              style={styles.emptyText}
+        {/* Card container — fixed minHeight so ScrollView never collapses */}
+        <View style={styles.column}>
+
+          {isEmpty ? (
+            // ── No orders state ──────────────────────────────
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={26}
+                color="#C0C0C0"
+              />
+              <Typography
+                weight="medium"
+                size={18}
+                color="#C0C0C0"
+                style={styles.emptyText}
+              >
+                No Orders
+              </Typography>
+            </View>
+
+          ) : (
+            // ── Order list ───────────────────────────────────
+            <ScrollView
+              style={styles.itemScroll}
+              showsVerticalScrollIndicator={false}
             >
-              No Orders
-            </Typography>
-          </View>
+              {items.map((item, i) => (
+                <View key={i} style={styles.card}>
 
-        ) : (
-          // ── Order list ───────────────────────────────────
-          <ScrollView
-            style={styles.itemScroll}
-            showsVerticalScrollIndicator={false}
-          >
-            {items.map((item, i) => (
-              <View key={i} style={styles.card}>
-
-                <Typography
-                  weight="medium"
-                  size={20}
-                  style={styles.food}
-                >
-                  {item.name}
-                </Typography>
-
-                <View
-                  style={[
-                    styles.qtyBox,
-                    item.qty === 0 ? styles.gray : styles.green,
-                  ]}
-                >
                   <Typography
-                    weight="bold"
-                    size={22}
-                    color={item.qty === 0 ? "#6b7280" : "#454545"}
+                    weight="medium"
+                    size={20}
+                    style={styles.food}
                   >
-                    {item.qty}
+                    {item.name}
                   </Typography>
+
+                  <View
+                    style={[
+                      styles.qtyBox,
+                      item.qty === 0 ? styles.gray : styles.green,
+                    ]}
+                  >
+                    <Typography
+                      weight="bold"
+                      size={22}
+                      color={item.qty === 0 ? "#6b7280" : "#454545"}
+                    >
+                      {item.qty}
+                    </Typography>
+                  </View>
+
                 </View>
+              ))}
+            </ScrollView>
+          )}
 
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
+        </View>
       </View>
+
     </View>
   );
 }
@@ -141,15 +146,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#41404073",
   },
 
-  column: {
+  shell: {
     flex: 1,
-    backgroundColor: "#fff",
     borderRadius: 18,
-    overflow: "hidden",
-    padding: 10,
+    borderWidth: 1.5,
+    borderColor: "transparent",
   },
 
-  activeColumn: {
+  activeShell: {
+    borderColor: "#F472B6",
     shadowColor: "#E15284",
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -158,8 +163,15 @@ const styles = StyleSheet.create({
       height: 0,
     },
     elevation: 10,
-    borderWidth: 1.5,
-    borderColor: "#F472B6",
+  },
+
+  column: {
+    flex: 1,
+    minHeight: 200,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 10,
   },
 
   emptyContainer: {
@@ -176,7 +188,7 @@ const styles = StyleSheet.create({
   },
 
   itemScroll: {
-    flex: 1,
+    flexGrow: 1,
   },
 
   card: {

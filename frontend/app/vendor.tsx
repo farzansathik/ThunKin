@@ -522,10 +522,9 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    paddingLeft: 4,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 40,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
@@ -547,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: 15,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#E8E8E8",
@@ -581,9 +580,9 @@ const styles = StyleSheet.create({
   },
 
   topBarLogo: {
-    height: "160%",
-    width: 130,
-    marginBottom: 4,
+    height: "200%",
+    width: 150,
+    // marginBottom: 0,
     opacity: 0.8,
   },
 
@@ -597,5 +596,6 @@ const styles = StyleSheet.create({
     padding: 20,
     flexDirection: "row",
     alignItems: "flex-start",
+    bottom: 10,
   },
 });
