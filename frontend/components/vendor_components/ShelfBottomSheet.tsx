@@ -1,16 +1,25 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import Typography from '@/components/typography';
 import { MaterialIcons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
+
+export type ShelfSlot = {
+  id: number;
+  slot_label: string;
+  order_item_id: number | null;
+  status: 'empty' | 'occupied';
+  menu_name: string | null;
+};
 
 interface ShelfBottomSheetProps {
   isVisible: boolean;
   onClose: () => void;
+  restId: number;
+  selectedItemId: number | null;
+  selectedFoodName: string | null;
+  onAssigned: (itemId: number) => void; // ← now passes itemId back
+  onCleared: (itemId: number) => void;
 }
 
 const ROWS = 4;
@@ -21,64 +30,196 @@ const PANEL_SIZE = 390;
 const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
   isVisible,
   onClose,
+  restId,
+  selectedItemId,
+  selectedFoodName,
+  onAssigned,
+  onCleared,
 }) => {
-  const [selectedCell, setSelectedCell] = useState<string | null>(null);
+  const [slots, setSlots] = useState<ShelfSlot[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isVisible) fetchSlots();
+  }, [isVisible]);
+
+  const fetchSlots = async () => {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from('shelf_slots')
+      .select(`
+        id,
+        slot_label,
+        order_item_id,
+        status,
+        order_items (
+          menu ( name )
+        )
+      `)
+      .eq('rest_id', restId)
+      .order('slot_label');
+
+    if (!error && data) {
+      const mapped: ShelfSlot[] = (data as any[]).map(row => ({
+        id: row.id,
+        slot_label: row.slot_label,
+        order_item_id: row.order_item_id,
+        status: row.status,
+        menu_name: row.order_items?.menu?.name ?? null,
+      }));
+      setSlots(mapped);
+    }
+
+    setLoading(false);
+  };
+
+  const handleSlotPress = async (slot: ShelfSlot) => {
+
+    // ── Occupied slot → confirm before clearing ──────────
+    if (slot.status === 'occupied') {
+      Alert.alert(
+        'Remove from Shelf',
+        `Put "${slot.menu_name}" out of slot ${slot.slot_label}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm',
+            style: 'destructive',
+            onPress: async () => {
+              // 1. Update order status to "ready" on the orders table
+              //    via order_items → orders join
+              const { data: orderItemData } = await supabase
+                .from('order_items')
+                .select('order_id')
+                .eq('id', slot.order_item_id)
+                .single();
+
+              if (orderItemData?.order_id) {
+                await supabase
+                  .from('orders')
+                  .update({ status: 'ready' })
+                  .eq('id', orderItemData.order_id);
+              }
+
+              // 2. Clear the shelf slot
+              const { error } = await supabase
+                .from('shelf_slots')
+                .update({
+                  order_item_id: null,
+                  status: 'empty',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', slot.id);
+
+              if (!error) {
+                fetchSlots();
+                onCleared(slot.order_item_id!);  // ← new
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // ── Empty slot → assign selected order ───────────────
+    if (!selectedItemId) return;
+
+    const { error } = await supabase
+      .from('shelf_slots')
+      .update({
+        order_item_id: selectedItemId,
+        status: 'occupied',
+        assigned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', slot.id);
+
+    if (!error) {
+      fetchSlots();
+      onAssigned(selectedItemId); // ← pass id so parent can decrease qty
+    }
+  };
+
+  const getSlot = (row: number, col: number): ShelfSlot | undefined => {
+    const rowNum = ROWS - row;
+    const colLetter = String.fromCharCode(65 + col);
+    const label = `${rowNum}${colLetter}`;
+    return slots.find(s => s.slot_label === label);
+  };
 
   if (!isVisible) return null;
 
-  // Generate label: row number (bottom to top) + column letter (A-D)
-  const getLabel = (row: number, col: number) => {
-    const rowNum = ROWS - row; // 4, 3, 2, 1 (bottom to top)
-    const colLetter = String.fromCharCode(65 + col); // A, B, C, D
-    return `${rowNum}${colLetter}`;
-  };
-
   return (
     <>
-      {/* Non-blocking overlay - just visual, doesn't block clicks */}
       <View style={styles.overlayVisual} pointerEvents="none" />
-
-      {/* Bottom Right Panel - Static and Larger */}
       <View style={styles.panel} pointerEvents="box-none">
-        {/* Header */}
+
         <View style={styles.header}>
-          <Typography weight="bold" size={20} color="#333">
-            Shelf Space
-          </Typography>
+          <View>
+            <Typography weight="bold" size={20} color="#333">
+              Shelf Space
+            </Typography>
+            {selectedItemId && (
+              <Typography weight="medium" size={13} color="#E15284">
+                Placing: {selectedFoodName}
+              </Typography>
+            )}
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <MaterialIcons name="close" size={24} color="#666" />
           </TouchableOpacity>
         </View>
 
-        {/* Grid of 4x4 buttons */}
-        <View style={styles.gridContainer}>
-          {Array.from({ length: ROWS }).map((_, rowIndex) => (
-            <View key={rowIndex} style={styles.row}>
-              {Array.from({ length: COLS }).map((_, colIndex) => {
-                const label = getLabel(rowIndex, colIndex);
-                const cellKey = `${rowIndex}-${colIndex}`;
-                return (
-                  <TouchableOpacity
-                    key={cellKey}
-                    style={[
-                      styles.gridButton,
-                      selectedCell === cellKey && styles.gridButtonSelected,
-                    ]}
-                    onPress={() => setSelectedCell(cellKey)}
-                  >
-                    <Typography
-                      weight="bold"
-                      size={16}
-                      color={selectedCell === cellKey ? '#fff' : '#E15284'}
+        {loading ? (
+          <ActivityIndicator color="#E15284" style={{ marginTop: 40 }} />
+        ) : (
+          <View style={styles.gridContainer}>
+            {Array.from({ length: ROWS }).map((_, rowIndex) => (
+              <View key={rowIndex} style={styles.row}>
+                {Array.from({ length: COLS }).map((_, colIndex) => {
+                  const slot = getSlot(rowIndex, colIndex);
+                  const occupied = slot?.status === 'occupied';
+                  const rowNum = ROWS - rowIndex;
+                  const colLetter = String.fromCharCode(65 + colIndex);
+                  const label = `${rowNum}${colLetter}`;
+
+                  return (
+                    <TouchableOpacity
+                      key={colIndex}
+                      style={[
+                        styles.gridButton,
+                        occupied && styles.gridButtonOccupied,
+                      ]}
+                      onPress={() => slot && handleSlotPress(slot)}
                     >
-                      {label}
-                    </Typography>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ))}
-        </View>
+                      <Typography
+                        weight="bold"
+                        size={14}
+                        color={occupied ? '#fff' : '#E15284'}
+                      >
+                        {label}
+                      </Typography>
+                      {occupied && (
+                        <Typography
+                          weight="medium"
+                          size={10}
+                          color="#fff"
+                          style={styles.slotFoodName}
+                          numberOfLines={2}
+                        >
+                          {slot?.menu_name}
+                        </Typography>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        )}
+
       </View>
     </>
   );
@@ -87,17 +228,13 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
 const styles = StyleSheet.create({
   overlayVisual: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 1,
-    bottom: 0,
+    top: 0, left: 0, right: 1, bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     zIndex: 99,
   },
   panel: {
     position: 'absolute',
-    bottom: 15,
-    right: 15,
+    bottom: 15, right: 15,
     width: PANEL_SIZE,
     height: PANEL_SIZE,
     backgroundColor: '#fff',
@@ -113,15 +250,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#c2c2c2',
   },
   closeBtn: {
-    width: 32,
-    height: 32,
+    width: 32, height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -144,10 +280,15 @@ const styles = StyleSheet.create({
     borderColor: '#E15284',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 4,
   },
-  gridButtonSelected: {
+  gridButtonOccupied: {
     backgroundColor: '#E15284',
     borderColor: '#C1216B',
+  },
+  slotFoodName: {
+    textAlign: 'center',
+    marginTop: 2,
   },
 });
 

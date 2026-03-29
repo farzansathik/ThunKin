@@ -31,6 +31,7 @@ export default function Vendor() {
   const [shelfBottomSheetOpen, setShelfBottomSheetOpen] = useState(false);
   const [columns, setColumns] = useState<Column[]>([]);
   const [vendorName, setVendorName] = useState("");
+  const [selectedItem, setSelectedItem] = useState<{ id: number; name: string } | null>(null);
   const { restId } = useUser();
   const router = useRouter();
 
@@ -105,12 +106,17 @@ export default function Vendor() {
       if (existing) {
         existing.qty += item.quantity;
       } else {
-        grouped[slotKey].push({ name: item.menu.name, qty: item.quantity });
+        grouped[slotKey].push({ id: item.id, name: item.menu.name, qty: item.quantity });
       }
     });
 
+    // Sort each slot's items by qty descending on load
+    Object.keys(grouped).forEach(key => {
+      grouped[key].sort((a, b) => b.qty - a.qty);
+    });
+
     // ── DEBUG: force current time to test isActive ─────────────────────
-    const now = new Date(); now.setHours(6, 30, 0, 0);  // ← force 06:30
+    const now = new Date(); now.setHours(6, 30, 0, 0);  // ← force 07:30
     // const now = new Date(); now.setHours(11, 25, 0, 0); // ← force 11:25
     // ──────────────────────────────────────────────────────────────────
     // const now = new Date(); // ← real time (comment out when debugging above)
@@ -120,10 +126,11 @@ export default function Vendor() {
     //    SHOW if ANY of these are true:
     //      - Slot is currently active (now is within this window)
     //      - Slot is in the future (startDate > now) — even if empty
-    //      - Slot is past BUT has orders (vendor may still need to prep)
+    //      - Slot is past BUT has orders with qty > 0 (vendor still needs to prep)
     //
-    //    HIDE only when:
+    //    HIDE when:
     //      - Slot is fully past AND has no orders
+    //      - Slot is fully past AND all orders are qty 0 (all assigned)
     const builtColumns: Column[] = [];
     let foundActiveIndex = -1;
     let foundNextOrderIndex = -1;
@@ -135,20 +142,22 @@ export default function Vendor() {
       const isActive = now >= startDate && now < slotEndDate;
       const isFutureOrCurrent = startDate >= now || isActive;
       const hasOrders = !!(grouped[start] && grouped[start].length > 0);
-      const isPastWithOrders = slotEndDate <= now && hasOrders;
+      const allItemsZero = hasOrders && grouped[start].every(item => item.qty === 0);
+      const isPastWithOrders = slotEndDate <= now && hasOrders && !allItemsZero;
 
-      // Only skip: fully past + no orders
-      if (!isFutureOrCurrent && !isPastWithOrders) return;
+      // Hide: fully past + no orders, OR fully past + all qty are 0
+      if (!isFutureOrCurrent && (!hasOrders || allItemsZero)) return;
 
       const colIndex = builtColumns.length;
 
       if (isActive) foundActiveIndex = colIndex;
 
-      // Next slot AFTER active that has orders
+      // Next slot AFTER active that has orders with qty > 0
       if (
         foundActiveIndex >= 0 &&
         colIndex > foundActiveIndex &&
         hasOrders &&
+        !allItemsZero &&
         foundNextOrderIndex === -1
       ) {
         foundNextOrderIndex = colIndex;
@@ -165,6 +174,38 @@ export default function Vendor() {
     nextOrderIndexRef.current = foundNextOrderIndex;
     setColumns(builtColumns);
   }, [restId]);
+
+  // ── Decrease qty by 1, sort so 0s sink to bottom ──────────────────────
+  const handleAssigned = (itemId: number) => {
+    setSelectedItem(null);
+    setColumns(prev =>
+      prev.map(col => ({
+        ...col,
+        items: col.items
+          .map(item => item.id === itemId ? { ...item, qty: Math.max(0, item.qty - 1) } : item)
+          .sort((a, b) => b.qty - a.qty),
+      }))
+    );
+  };
+
+  // ── Increase qty by 1 when returned from shelf, re-sort ───────────────
+  const handleCleared = (itemId: number) => {
+    setColumns(prev =>
+      prev.map(col => ({
+        ...col,
+        items: col.items
+          .map(item => item.id === itemId ? { ...item, qty: item.qty + 1 } : item)
+          .sort((a, b) => b.qty - a.qty),
+      }))
+    );
+  };
+
+  // ── Item selection — tap same item again to deselect ──────────────────
+  const handleSelectItem = (item: FoodItem) => {
+    setSelectedItem(prev =>
+      prev?.id === item.id ? null : { id: item.id, name: item.name }
+    );
+  };
 
   const jumpToActive = () => {
     const idx = activeIndexRef.current;
@@ -419,12 +460,14 @@ export default function Vendor() {
             contentContainerStyle={styles.mainContent}
             showsHorizontalScrollIndicator={false}
           >
-            {columns.map((col, index) => (
+            {columns.map((col) => (
               <OrderInTimeSlot
-                key={index}
+                key={col.time}
                 time={col.time}
                 items={col.items}
                 isActive={col.isActive}
+                selectedItemId={selectedItem?.id ?? null}
+                onSelectItem={handleSelectItem}
               />
             ))}
           </ScrollView>
@@ -436,6 +479,11 @@ export default function Vendor() {
         <ShelfBottomSheet
           isVisible={shelfBottomSheetOpen}
           onClose={() => setShelfBottomSheetOpen(false)}
+          restId={restId!}
+          selectedItemId={selectedItem?.id ?? null}
+          selectedFoodName={selectedItem?.name ?? null}
+          onAssigned={handleAssigned}
+          onCleared={handleCleared}
         />
 
       </View>
@@ -534,13 +582,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Right panel ──────────────────────────────────────────
   rightPanel: {
     flex: 1,
     flexDirection: "column",
   },
 
-  // ── Top bar ──────────────────────────────────────────────
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -582,11 +628,9 @@ const styles = StyleSheet.create({
   topBarLogo: {
     height: "200%",
     width: 150,
-    // marginBottom: 0,
     opacity: 0.8,
   },
 
-  // ── Main scroll ──────────────────────────────────────────
   main: {
     flex: 1,
     backgroundColor: "#eaecf0",
