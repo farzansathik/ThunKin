@@ -139,9 +139,8 @@ export default function LoginScreen() {
           .from("users")
           .insert([{
             email: cleanEmail,
-            username: username.trim(),
-            account: "user",
-            auth_id: user.id, 
+            account_name: username.trim(),
+            auth_id: user.id,
           }])
           .select()
           .single();
