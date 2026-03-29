@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -178,20 +178,24 @@ export default function TimeSlotScreen() {
     realtimeChannelRef.current = channel;
   };
 
-  useEffect(() => {
-    buildSlots(true);      // spinner on first load only
-    subscribeRealtime();   // instant updates when orders change
+  useFocusEffect(
+    useCallback(() => {
+      buildSlots(true); // spinner on first load only
+      subscribeRealtime(); // instant updates when orders change
+      
+      // Also refresh every 60 s so the "earliest" window stays accurate
+      const tick = setInterval(buildSlots, 60_000); // silent, just to advance time window
 
-    // Also refresh every 60 s so the "earliest" window stays accurate
-    const tick = setInterval(buildSlots, 60_000); // silent, just to advance time window
-
-    return () => {
-      clearInterval(tick);
-      if (realtimeChannelRef.current) {
-        supabase.removeChannel(realtimeChannelRef.current);
-      }
-    };
-  }, [shopId]);
+      // This cleanup runs when you LEAVE the page
+      return () => {
+        clearInterval(tick);
+        if (realtimeChannelRef.current) {
+          supabase.removeChannel(realtimeChannelRef.current);
+          realtimeChannelRef.current = null;
+        }
+      };
+    }, [shopId])
+  );
 
   const handleBack = () => {
     router.back();
