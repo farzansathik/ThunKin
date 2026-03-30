@@ -80,7 +80,7 @@ export default function TimeSlotScreen() {
 
     // 2. "Earliest bookable" = the LATER of (now + 30 min) OR (open + 30 min)
     const now = new Date();
-    //now.setHours(0, 0, 0, 0); // ------------------------------------------------------ Hardcode to Simulate Fake time for now 
+    now.setHours(9, 0, 0, 0); // ------------------------------------------------------ Hardcode to Simulate Fake time for now 
     const earliestFromNow = new Date(now.getTime() + 30 * 60 * 1000);
     const openDate = todayAt(openH, openM);
     const earliestFromOpen = new Date(openDate.getTime() + 30 * 60 * 1000);

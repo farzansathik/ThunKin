@@ -25,7 +25,7 @@ interface ShelfBottomSheetProps {
 const ROWS = 4;
 const COLS = 4;
 const BUTTON_SIZE = 70;
-const PANEL_SIZE = 390;
+const PANEL_SIZE = 395;
 
 const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
   isVisible,
@@ -217,11 +217,11 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
 
         <View style={styles.header}>
           <View>
-            <Typography weight="bold" size={20} color="#333">
+            <Typography weight="bold" size={20} color="#333" style={{ bottom: 5 }}>
               Shelf Space
             </Typography>
             {selectedItemId && (
-              <Typography weight="medium" size={13} color="#E15284">
+              <Typography fontType={2} weight="bold" size={13} color="#E15284" style={{ marginTop: -3 }}>
                 Placing: {selectedFoodName}
               </Typography>
             )}
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   overlayVisual: {
     position: 'absolute',
     top: 0, left: 0, right: 1, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     zIndex: 99,
   },
   panel: {
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
     bottom: 15, right: 15,
     width: PANEL_SIZE,
     height: PANEL_SIZE,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
-    elevation: 15,
+    elevation: 35,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 20,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#c2c2c2',
@@ -319,6 +319,7 @@ const styles = StyleSheet.create({
     width: 32, height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    bottom: 5
   },
   gridContainer: {
     flex: 1,

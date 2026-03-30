@@ -1,6 +1,7 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Typography from "@/components/typography";
+import RefreshableScrollView from "@/components/RefreshableScrollView";
 
 export type FoodItem = {
   id: number;        // ← keep as the "first" id for selection display
@@ -15,6 +16,7 @@ type OrderInTimeSlotProps = {
   isActive?: boolean;
   selectedItemId?: number | null;
   onSelectItem?: (item: FoodItem) => void;
+  onRefresh?: () => Promise<void>;
 };
 
 export default function OrderInTimeSlot({
@@ -23,6 +25,7 @@ export default function OrderInTimeSlot({
   isActive = false,
   selectedItemId,
   onSelectItem,
+  onRefresh,
 }: OrderInTimeSlotProps) {
 
   const isEmpty = items.length === 0;
@@ -52,7 +55,11 @@ export default function OrderInTimeSlot({
               </Typography>
             </View>
           ) : (
-            <ScrollView style={styles.itemScroll} showsVerticalScrollIndicator={false}>
+            <RefreshableScrollView
+              onRefresh={onRefresh || (async () => {})}
+              style={styles.itemScroll}
+              showsVerticalScrollIndicator={false}
+            >
               {items.map((item, i) => {
                 const isSelected = selectedItemId === item.id;
                 return (
@@ -78,7 +85,7 @@ export default function OrderInTimeSlot({
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </RefreshableScrollView>
           )}
         </View>
       </View>

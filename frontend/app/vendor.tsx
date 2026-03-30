@@ -130,9 +130,9 @@ export default function Vendor() {
     });
 
     // ── DEBUG: force current time to test isActive ─────────────────────
-    // const now = new Date(); now.setHours(6, 30, 0, 0);
+    const now = new Date(); now.setHours(11, 0, 0, 0);
     // ──────────────────────────────────────────────────────────────────
-    const now = new Date(); // ← real time
+    // const now = new Date(); // ← real time
 
     // 5. Build columns with correct visibility rules:
     //
@@ -188,8 +188,15 @@ export default function Vendor() {
   }, [restId]);
 
   // ── Decrease qty by 1, consume first id from ids, sort so 0s sink ────
-  const handleAssigned = (itemId: number) => {
+  const handleAssigned = async (itemId: number) => {
     setSelectedItem(null);
+    
+    // Update database: mark as ready (on shelf) and update timestamp
+    await supabase
+      .from("order_items")
+      .update({ status: "ready", updated_at: new Date().toISOString() })
+      .eq("id", itemId)
+    
     setColumns(prev =>
       prev.map(col => ({
         ...col,
@@ -210,24 +217,15 @@ export default function Vendor() {
   };
 
   // ── Increase qty by 1 when returned from shelf, re-sort ───────────────
-  const handleCleared = (itemId: number) => {
-    setColumns(prev =>
-      prev.map(col => ({
-        ...col,
-        items: col.items
-          .map(item => {
-            const belongsHere = item.ids.includes(itemId) || item.id === itemId;
-            if (!belongsHere) return item;
-            return {
-              ...item,
-              ids: [itemId, ...item.ids],  // put returned id back at front
-              id: itemId,
-              qty: item.qty + 1,
-            };
-          })
-          .sort((a, b) => b.qty - a.qty),
-      }))
-    );
+  const handleCleared = async (itemId: number) => {
+    // Update database: mark back as pending (return to queue) and update timestamp
+    await supabase
+      .from("order_items")
+      .update({ status: "pending", updated_at: new Date().toISOString() })
+      .eq("id", itemId)
+    
+    // Re-fetch orders to properly merge returned items with existing orders of same food
+    await fetchOrders();
   };
 
   // ── Item selection — tap same item again to deselect ──────────────────
@@ -498,6 +496,7 @@ export default function Vendor() {
                 isActive={col.isActive}
                 selectedItemId={selectedItem?.id ?? null}
                 onSelectItem={handleSelectItem}
+                onRefresh={fetchOrders}
               />
             ))}
           </ScrollView>
