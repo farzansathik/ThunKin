@@ -27,6 +27,7 @@ export default function StatusScreen() {
   const { foodId, foodName, shopId, shopName, slotTime, orderId, orderItemId } = useLocalSearchParams();
 
   const [foodItem, setFoodItem] = useState<MenuItem | null>(null);
+  const [slotLabel, setSlotLabel] = useState<string>("1A");
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -48,6 +49,25 @@ export default function StatusScreen() {
     };
     fetchFood();
   }, [foodId]);
+
+  useEffect(() => {
+    const fetchSlot = async () => {
+      if (!orderItemId) return;
+      const { data, error } = await supabase
+        .from("shelf_slots")
+        .select("slot_label")
+        .eq("order_item_id", Number(orderItemId))
+        .single();
+      if (error) { 
+        console.log("Slot fetch error:", error); 
+        return; 
+      }
+      if (data?.slot_label) {
+        setSlotLabel(data.slot_label);
+      }
+    };
+    fetchSlot();
+  }, [orderItemId]);
 
   const playSuccessAnimation = () => {
     // Reset
@@ -160,7 +180,7 @@ export default function StatusScreen() {
 
   const displayName = foodItem?.name ?? (Array.isArray(foodName) ? foodName[0] : foodName) ?? "N/A";
   const displayShop = Array.isArray(shopName) ? shopName[0] : shopName ?? "N/A";
-  const displaySlot = "1A"; 
+  const displaySlot = slotLabel; 
 
   const tickScale = tickAnim.interpolate({
     inputRange: [0, 0.5, 1],

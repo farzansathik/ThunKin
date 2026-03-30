@@ -130,9 +130,9 @@ export default function Vendor() {
     });
 
     // ── DEBUG: force current time to test isActive ─────────────────────
-    const now = new Date(); now.setHours(11, 0, 0, 0);
+    // const now = new Date(); now.setHours(11, 0, 0, 0);  ------------------- Hardcode to Simulate Fake time for now
     // ──────────────────────────────────────────────────────────────────
-    // const now = new Date(); // ← real time
+    const now = new Date(); // ← real time
 
     // 5. Build columns with correct visibility rules:
     //

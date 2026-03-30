@@ -276,15 +276,20 @@ export default function HistoryScreen() {
 
   const getCurrentTimeInMinutes = (): number => {
     const now = new Date();
-    now.setHours(9, 40, 0, 0); //
+    //now.setHours(9, 40, 0, 0); //  ---------------------------- Hardcode current time for testing
     return now.getHours() * 60 + now.getMinutes();
   };
 
   const isInNowSection = (order: Order): boolean => {
-    if (order.status !== "ready" && order.status !== "pending") return false;
-    const currentMinutes = getCurrentTimeInMinutes();
-    const pickupMinutes = getPickupTimeInMinutes(order.pick_up_time);
-    return currentMinutes >= pickupMinutes;
+    // If status is ready, always show in Now section
+    if (order.status === "ready") return true;
+    // If status is pending, show only if current time >= pickup time
+    if (order.status === "pending") {
+      const currentMinutes = getCurrentTimeInMinutes();
+      const pickupMinutes = getPickupTimeInMinutes(order.pick_up_time);
+      return currentMinutes >= pickupMinutes;
+    }
+    return false;
   };
 
   const renderOrderItem = (order: Order) => (
