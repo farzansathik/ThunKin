@@ -79,48 +79,83 @@ export default function StatusScreen() {
   };
 
     const handleConfirm = async () => {
-    try {
+      try {
         console.log("orderId:", orderId);
         console.log("orderItemId:", orderItemId);
 
-        // Update orders table
+        // 1. Update orders.status → "picked_up"
         if (orderId) {
-        const { error: orderError } = await supabase
+          const { error: orderError } = await supabase
             .from("orders")
-            .update({ status: "picked_up" })
-            .eq("id", Number(orderId)); 
+            .update({ 
+              status: "picked_up",
+              updated_at: new Date().toISOString(), 
+            })
+            .eq("id", Number(orderId));
 
-        if (orderError) console.error("Order update error:", orderError);
-        else console.log("Order updated ✓");
+          if (orderError) console.error("Order update error:", orderError);
+          else console.log("Order updated ✓");
         } else {
-        console.warn("orderId is missing!");
+          console.warn("orderId is missing!");
         }
 
-        // Update order_items table
+        // 2. Update order_items.status → "picked_up"
         if (orderItemId) {
-        const { error: itemError } = await supabase
+          const { error: itemError } = await supabase
             .from("order_items")
-            .update({ status: "picked_up" })
-            .eq("id", Number(orderItemId)); 
+            .update({ 
+              status: "picked_up",
+              updated_at: new Date().toISOString(), 
+            })
+            .eq("id", Number(orderItemId));
 
-        if (itemError) console.error("Order item update error:", itemError);
-        else console.log("Order item updated ✓");
+          if (itemError) console.error("Order item update error:", itemError);
+          else console.log("Order item updated ✓");
         } else {
-        console.warn("orderItemId is missing!");
+          console.warn("orderItemId is missing!");
+        }
+
+        // 3. Log ready → picked_up in order_items_logs
+        if (orderItemId) {
+          const { error: logError } = await supabase
+            .from("order_items_logs")
+            .insert({
+              order_item_id: Number(orderItemId),
+              from_status: "ready",
+              to_status: "picked_up",
+            });
+
+          if (logError) console.error("Log insert error:", logError);
+          else console.log("Log inserted ✓");
+        }
+
+        // 4. Clear shelf slot linked to this order item
+        if (orderItemId) {
+          const { error: shelfError } = await supabase
+            .from("shelf_slots")
+            .update({
+              order_item_id: null,
+              status: "empty",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("order_item_id", Number(orderItemId));
+
+          if (shelfError) console.error("Shelf slot clear error:", shelfError);
+          else console.log("Shelf slot cleared ✓");
         }
 
         setShowSuccess(true);
         playSuccessAnimation();
-        
-        // navigate after 2 sec
+
+        // Navigate after 2 sec
         setTimeout(() => {
-        setShowSuccess(false);
-        router.replace("/reserve");
+          setShowSuccess(false);
+          router.replace("/reserve");
         }, 2000);
 
-    } catch (err) {
+      } catch (err) {
         console.error("Confirm pick-up error:", err);
-    }
+      }
     };
 
   const displayName = foodItem?.name ?? (Array.isArray(foodName) ? foodName[0] : foodName) ?? "N/A";

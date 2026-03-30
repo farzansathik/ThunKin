@@ -3,7 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import Typography from "@/components/typography";
 
 export type FoodItem = {
-  id: number;
+  id: number;        // ← keep as the "first" id for selection display
+  ids: number[];     // ← all order_item_ids behind this merged card
   name: string;
   qty: number;
 };

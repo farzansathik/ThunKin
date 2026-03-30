@@ -18,7 +18,7 @@ interface ShelfBottomSheetProps {
   restId: number;
   selectedItemId: number | null;
   selectedFoodName: string | null;
-  onAssigned: (itemId: number) => void; // ← now passes itemId back
+  onAssigned: (itemId: number) => void;
   onCleared: (itemId: number) => void;
 }
 
@@ -87,8 +87,8 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
             text: 'Confirm',
             style: 'destructive',
             onPress: async () => {
-              // 1. Update order status to "ready" on the orders table
-              //    via order_items → orders join
+
+              // 1. Get order_id from order_items
               const { data: orderItemData } = await supabase
                 .from('order_items')
                 .select('order_id')
@@ -96,13 +96,35 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
                 .single();
 
               if (orderItemData?.order_id) {
+                // 2. Update orders.status → "pending"
                 await supabase
                   .from('orders')
-                  .update({ status: 'ready' })
+                  .update({ 
+                    status: 'pending',
+                    updated_at: new Date().toISOString(), 
+                  })
                   .eq('id', orderItemData.order_id);
               }
 
-              // 2. Clear the shelf slot
+              // 3. Update order_items.status → "pending"
+              await supabase
+                .from('order_items')
+                .update({ 
+                  status: 'pending',
+                  updated_at: new Date().toISOString(),  
+                })
+                .eq('id', slot.order_item_id);
+
+              // 4. Log ready → pending
+              await supabase
+                .from('order_items_logs')
+                .insert({
+                  order_item_id: slot.order_item_id,
+                  from_status: 'ready',
+                  to_status: 'pending',
+                });
+
+              // 5. Clear the shelf slot
               const { error } = await supabase
                 .from('shelf_slots')
                 .update({
@@ -114,7 +136,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
 
               if (!error) {
                 fetchSlots();
-                onCleared(slot.order_item_id!);  // ← new
+                onCleared(slot.order_item_id!);
               }
             },
           },
@@ -126,6 +148,43 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
     // ── Empty slot → assign selected order ───────────────
     if (!selectedItemId) return;
 
+    // 1. Get order_id from order_items
+    const { data: orderItemData } = await supabase
+      .from('order_items')
+      .select('order_id')
+      .eq('id', selectedItemId)
+      .single();
+
+    if (orderItemData?.order_id) {
+      // 2. Update orders.status → "ready"
+      await supabase
+        .from('orders')
+        .update({ 
+          status: 'ready',
+          updated_at: new Date().toISOString(), 
+        })
+        .eq('id', orderItemData.order_id);
+    }
+
+    // 3. Update order_items.status → "ready"
+    await supabase
+      .from('order_items')
+      .update({ 
+        status: 'ready',
+        updated_at: new Date().toISOString(), 
+      })
+      .eq('id', selectedItemId);
+
+    // 4. Log pending → ready
+    await supabase
+      .from('order_items_logs')
+      .insert({
+        order_item_id: selectedItemId,
+        from_status: 'pending',
+        to_status: 'ready',
+      });
+
+    // 5. Assign the shelf slot
     const { error } = await supabase
       .from('shelf_slots')
       .update({
@@ -138,7 +197,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
 
     if (!error) {
       fetchSlots();
-      onAssigned(selectedItemId); // ← pass id so parent can decrease qty
+      onAssigned(selectedItemId);
     }
   };
 

@@ -71,7 +71,9 @@ export default function Vendor() {
     // 2. Generate ALL 10-min slots between open and close
     const allSlots = generateSlots(restData.open_time, restData.close_time);
 
-    // 3. Fetch today's order_items
+    // 3. Fetch today's order_items — pending AND ready
+    //    pending = still in queue (show with actual qty)
+    //    ready   = already on shelf (show with qty 0, card stays visible)
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
@@ -82,10 +84,12 @@ export default function Vendor() {
       .select(`
         id,
         quantity,
+        status,
         orders!inner ( pick_up_time ),
         menu!inner ( name )
       `)
       .eq("rest_id", restId)
+      .in("status", ["pending", "ready"])      // ← fetch both
       .gte("orders.pick_up_time", todayStart.toISOString())
       .lte("orders.pick_up_time", todayEnd.toISOString());
 
@@ -95,6 +99,8 @@ export default function Vendor() {
     }
 
     // 4. Group orders by 10-min slot key
+    //    pending items contribute their qty
+    //    ready items contribute 0 (already on shelf)
     const grouped: Record<string, FoodItem[]> = {};
 
     (orderItems || []).forEach((item: any) => {
@@ -102,35 +108,41 @@ export default function Vendor() {
       const slotKey = toSlotKey(pickUpTime);
       if (!grouped[slotKey]) grouped[slotKey] = [];
 
+      const displayQty = item.status === "pending" ? item.quantity : 0;
+
       const existing = grouped[slotKey].find(f => f.name === item.menu.name);
       if (existing) {
-        existing.qty += item.quantity;
+        existing.qty += displayQty;
+        existing.ids.push(item.id);
       } else {
-        grouped[slotKey].push({ id: item.id, name: item.menu.name, qty: item.quantity });
+        grouped[slotKey].push({
+          id: item.id,
+          ids: [item.id],
+          name: item.menu.name,
+          qty: displayQty,
+        });
       }
     });
 
-    // Sort each slot's items by qty descending on load
+    // Sort each slot's items by qty descending on load (0s sink to bottom)
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => b.qty - a.qty);
     });
 
     // ── DEBUG: force current time to test isActive ─────────────────────
-    const now = new Date(); now.setHours(6, 30, 0, 0);  // ← force 07:30
-    // const now = new Date(); now.setHours(11, 25, 0, 0); // ← force 11:25
+    // const now = new Date(); now.setHours(6, 30, 0, 0);
     // ──────────────────────────────────────────────────────────────────
-    // const now = new Date(); // ← real time (comment out when debugging above)
+    const now = new Date(); // ← real time
 
     // 5. Build columns with correct visibility rules:
     //
     //    SHOW if ANY of these are true:
     //      - Slot is currently active (now is within this window)
     //      - Slot is in the future (startDate > now) — even if empty
-    //      - Slot is past BUT has orders with qty > 0 (vendor still needs to prep)
+    //      - Slot is past BUT has orders (show even if all 0 so vendor can see)
     //
-    //    HIDE when:
-    //      - Slot is fully past AND has no orders
-    //      - Slot is fully past AND all orders are qty 0 (all assigned)
+    //    HIDE only when:
+    //      - Slot is fully past AND has no orders at all
     const builtColumns: Column[] = [];
     let foundActiveIndex = -1;
     let foundNextOrderIndex = -1;
@@ -143,10 +155,10 @@ export default function Vendor() {
       const isFutureOrCurrent = startDate >= now || isActive;
       const hasOrders = !!(grouped[start] && grouped[start].length > 0);
       const allItemsZero = hasOrders && grouped[start].every(item => item.qty === 0);
-      const isPastWithOrders = slotEndDate <= now && hasOrders && !allItemsZero;
+      const isPastWithOrders = slotEndDate <= now && hasOrders;
 
-      // Hide: fully past + no orders, OR fully past + all qty are 0
-      if (!isFutureOrCurrent && (!hasOrders || allItemsZero)) return;
+      // Hide only: fully past + no orders at all
+      if (!isFutureOrCurrent && !isPastWithOrders) return;
 
       const colIndex = builtColumns.length;
 
@@ -175,14 +187,23 @@ export default function Vendor() {
     setColumns(builtColumns);
   }, [restId]);
 
-  // ── Decrease qty by 1, sort so 0s sink to bottom ──────────────────────
+  // ── Decrease qty by 1, consume first id from ids, sort so 0s sink ────
   const handleAssigned = (itemId: number) => {
     setSelectedItem(null);
     setColumns(prev =>
       prev.map(col => ({
         ...col,
         items: col.items
-          .map(item => item.id === itemId ? { ...item, qty: Math.max(0, item.qty - 1) } : item)
+          .map(item => {
+            if (item.id !== itemId) return item;
+            const remainingIds = item.ids.slice(1); // remove first id (just assigned)
+            return {
+              ...item,
+              ids: remainingIds,
+              id: remainingIds[0] ?? item.id,       // next id becomes active
+              qty: Math.max(0, item.qty - 1),
+            };
+          })
           .sort((a, b) => b.qty - a.qty),
       }))
     );
@@ -194,7 +215,16 @@ export default function Vendor() {
       prev.map(col => ({
         ...col,
         items: col.items
-          .map(item => item.id === itemId ? { ...item, qty: item.qty + 1 } : item)
+          .map(item => {
+            const belongsHere = item.ids.includes(itemId) || item.id === itemId;
+            if (!belongsHere) return item;
+            return {
+              ...item,
+              ids: [itemId, ...item.ids],  // put returned id back at front
+              id: itemId,
+              qty: item.qty + 1,
+            };
+          })
           .sort((a, b) => b.qty - a.qty),
       }))
     );
@@ -203,7 +233,7 @@ export default function Vendor() {
   // ── Item selection — tap same item again to deselect ──────────────────
   const handleSelectItem = (item: FoodItem) => {
     setSelectedItem(prev =>
-      prev?.id === item.id ? null : { id: item.id, name: item.name }
+      prev?.id === item.ids[0] ? null : { id: item.ids[0], name: item.name }
     );
   };
 
@@ -357,7 +387,7 @@ export default function Vendor() {
             <View style={styles.profileRow}>
               <TouchableOpacity onPress={handleLogout}>
                 <View style={styles.avatar}>
-                  <Typography weight="bold" size={14} color="#E15284">
+                  <Typography weight="bold" size={16} color="#E15284">
                     {getInitials(vendorName)}
                   </Typography>
                 </View>
@@ -376,7 +406,7 @@ export default function Vendor() {
             <View style={styles.avatarOnly}>
               <TouchableOpacity onPress={handleLogout}>
                 <View style={styles.avatar}>
-                  <Typography weight="bold" size={14} color="#E15284">
+                  <Typography weight="bold" size={16} color="#E15284">
                     {getInitials(vendorName)}
                   </Typography>
                 </View>
