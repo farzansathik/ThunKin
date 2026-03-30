@@ -14,6 +14,7 @@ import { supabase } from "../../lib/supabase";
 import Typography from "@/components/typography";
 import RefreshableScrollView from "@/components/RefreshableScrollView";
 import OrderHistoryCard from "@/components/user_components/OrderHistoryCard";
+import { useUser } from "@/context/UserContext";
 
 interface OrderItem {
   id: string;
@@ -32,8 +33,9 @@ interface Order {
   cafeteria_name: string;
   items: OrderItem[];
   total_price: number;
-  status: "ready" | "pending" | string;
+  status: "ready" | "pending" | "picked_up" | string;
   pick_up_time: string;
+  updated_at: string | null;
   created_at: string | null;
 }
 
@@ -44,6 +46,7 @@ interface GroupedOrders {
 }
 
 export default function HistoryScreen() {
+  const { userId } = useUser();
   const [orders, setOrders] = useState<GroupedOrders>({
     ready: [],
     pending: [],
@@ -92,13 +95,20 @@ export default function HistoryScreen() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [userId]);
 
   const fetchOrders = async () => {
     try {
+      if (!userId) {
+        console.log("No userId found");
+        setLoading(false);
+        return;
+      }
+
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
+        .eq("user_id", userId)
         .order("id", { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -162,6 +172,7 @@ export default function HistoryScreen() {
             total_price: order.total_price,
             status: order.status,
             pick_up_time: order.pick_up_time,
+            updated_at: order.updated_at,
             created_at: order.created_at,
           };
         })
@@ -263,23 +274,38 @@ export default function HistoryScreen() {
     return `${newH.toString().padStart(2, "0")}:${newM.toString().padStart(2, "0")}`;
   };
 
+  const getCurrentTimeInMinutes = (): number => {
+    const now = new Date();
+    now.setHours(9, 40, 0, 0); //
+    return now.getHours() * 60 + now.getMinutes();
+  };
+
+  const isInNowSection = (order: Order): boolean => {
+    if (order.status !== "ready" && order.status !== "pending") return false;
+    const currentMinutes = getCurrentTimeInMinutes();
+    const pickupMinutes = getPickupTimeInMinutes(order.pick_up_time);
+    return currentMinutes >= pickupMinutes;
+  };
+
   const renderOrderItem = (order: Order) => (
     <OrderHistoryCard key={order.id} order={order} formatTime={formatTime} />
   );
 
-  // ── Ready section ────────────────────────────────────────────────────────
-  const renderReadySection = (orderList: Order[]) => {
-    if (orderList.length === 0) return null;
-    const sortedOrders = sortOrdersByPickupTime(orderList);
+  // ── Now section ────────────────────────────────────────────────────────
+  const renderNowSection = (readyOrders: Order[], pendingOrders: Order[]) => {
+    const nowReadyOrders = readyOrders.filter(isInNowSection);
+    const nowPendingOrders = pendingOrders.filter(isInNowSection);
+    const allNowOrders = [...nowReadyOrders, ...nowPendingOrders];
+    
+    if (allNowOrders.length === 0) return null;
+    const sortedOrders = sortOrdersByPickupTime(allNowOrders);
 
     return (
       <View style={styles.boxedSection}>
         <View style={styles.sectionHeaderInBox}>
-          <Animated.View style={{ transform: [{ scale: pulseAnimReady }], marginRight: 8 }}>
-            <AntDesign name="check-circle" size={20} color="#E95D91" />
-          </Animated.View>
+          <Ionicons name="time-outline" size={20} color="#E95D91" style={{ marginRight: 6 }} />
           <Typography size={16} weight="bold" style={styles.sectionTitleBoxed}>
-            Ready
+            Now
           </Typography>
           <View style={styles.sectionLineReady} />
         </View>
@@ -291,15 +317,17 @@ export default function HistoryScreen() {
   };
 
   // ── Ongoing section ──────────────────────────────────────────────────────
-  const renderOngoingSection = (orderList: Order[]) => {
-    if (orderList.length === 0) return null;
-    const sortedOrders = sortOrdersByPickupTime(orderList);
+  const renderOngoingSection = (readyOrders: Order[], pendingOrders: Order[]) => {
+    // Ongoing shows pending orders that are NOT in the Now section
+    const ongoingOrders = pendingOrders.filter(order => !isInNowSection(order));
+    if (ongoingOrders.length === 0) return null;
+    const sortedOrders = sortOrdersByPickupTime(ongoingOrders);
 
     return (
       <View>
         <View style={styles.sectionHeader}>
           {/* <Animated.View style={{ transform: [{ rotate: spinOngoing }], marginRight: 8 }}> */}
-            <MaterialCommunityIcons name="timer-sand" size={20} color="#888888" />
+            <MaterialCommunityIcons name="timer-sand" size={20} color="#888888" style={{ marginRight: 3 }} />
           {/* </Animated.View> */}
           <Typography size={16} weight="bold" style={styles.sectionTitle}>
             Ongoing
@@ -383,8 +411,8 @@ export default function HistoryScreen() {
 
             {orders.ready.length > 0 || orders.pending.length > 0 ? (
               <>
-                {renderReadySection(orders.ready)}
-                {renderOngoingSection(orders.pending)}
+                {renderNowSection(orders.ready, orders.pending)}
+                {renderOngoingSection(orders.ready, orders.pending)}
               </>
             ) : (
               <View style={styles.noRecentOrdersContainer}>

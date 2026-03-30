@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Typography from "@/components/typography";
@@ -23,7 +23,7 @@ interface Order {
   total_price: number;
   status: "ready" | "pending" | string;
   pick_up_time: string;
-  ready_time?: string;
+  updated_at: string | null;
   created_at: string | null;
 }
 
@@ -34,6 +34,28 @@ interface Props {
 
 export default function OrderHistoryCard({ order, formatTime }: Props) {
   const router = useRouter();
+  const pulseAnimReady = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    if (order.status === "ready" && order.updated_at) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnimReady, {
+            toValue: 1.15,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnimReady, {
+            toValue: 1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [order.status, order.updated_at]);
 
   const handleQRPress = () => {
     const firstItem = order.items[0];
@@ -87,23 +109,31 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
           </Typography>
         )}
 
-        <View style={styles.pickupRow}>
-          <Typography weight="medium" size={12} style={styles.pickupLabel}>
-            Pick-Up Time:{"  "}
-          </Typography>
-          <Typography fontType={3} weight="bold" size={16} style={styles.pickupValue}>
-            {formatTime(order.pick_up_time)}
-          </Typography>
-        </View>
-
-        {order.ready_time && (
+        {order.status !== "ready" && (
           <View style={styles.pickupRow}>
             <Typography weight="medium" size={12} style={styles.pickupLabel}>
-              Ready:{"  "}
+              Pick-Up:{"  "}
             </Typography>
-            <Typography fontType={3} weight="bold" size={16} style={styles.readyValue}>
-              {formatTime(order.ready_time)}
+            <Typography fontType={3} weight="bold" size={16} style={styles.pickupValue}>
+              {formatTime(order.pick_up_time)}
             </Typography>
+          </View>
+        )}
+
+        {order.updated_at && order.status === "ready" && (
+          <View>
+            <View style={styles.readyTimeBadge}>
+              {/* <Animated.View style={{ transform: [{ scale: pulseAnimReady }] }}>
+                <Ionicons name="checkmark-circle" size={12} color="#ffffff" />
+              </Animated.View> */}
+              <Ionicons name="checkmark-circle" size={12} color="#ffffff" />
+              <Typography weight="bold" size={11} style={styles.readyTimeLabel}>
+                Ready:
+              </Typography>
+              <Typography fontType={3} weight="bold" size={12} style={styles.readyTimeBadgeText}>
+                {formatTime(order.updated_at)}
+              </Typography>
+            </View>
           </View>
         )}
       </View>
@@ -116,9 +146,6 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
         {order.status === "ready" && (
         <TouchableOpacity style={styles.qrButton} onPress={handleQRPress}>
             <Ionicons name="qr-code-sharp" size={38} color="#bcbcbc" />
-            {/* <Typography size={8} weight="medium" style={styles.qrLabel}>
-            Pick-Up QR
-            </Typography> */}
         </TouchableOpacity>
         )}
       </View>
@@ -167,13 +194,28 @@ const styles = StyleSheet.create({
   pickupRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
   },
   pickupLabel: {
     color: "#222222",
   },
   pickupValue: {
     color: "#E95D91",
+  },
+  readyTimeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#e95d90f1",
+    borderRadius: 10,
+    alignSelf: "flex-start",
+  },
+  readyTimeLabel: {
+    color: "#ffffff",
+  },
+  readyTimeBadgeText: {
+    color: "#ffffff",
   },
   moreItems: {
     color: "#999999",
@@ -203,5 +245,20 @@ const styles = StyleSheet.create({
   },
   readyValue: {
     color: "#1DBA45",  // green to visually distinguish from pickup time
+  },
+  readyBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#1DBA45",
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  readyBadgeText: {
+    color: "#ffffff",
+    fontWeight: "600",
   },
 });
