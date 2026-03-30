@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   overlayVisual: {
     position: 'absolute',
     top: 0, left: 0, right: 1, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'rgba(0, 0, 0, 0.0005)',
     zIndex: 99,
   },
   panel: {

@@ -189,16 +189,14 @@ export default function Vendor() {
 
   // ── Decrease qty by 1, consume first id from ids, sort so 0s sink ────
   const handleAssigned = async (itemId: number) => {
-    setSelectedItem(null);
-    
     // Update database: mark as ready (on shelf) and update timestamp
     await supabase
       .from("order_items")
       .update({ status: "ready", updated_at: new Date().toISOString() })
       .eq("id", itemId)
     
-    setColumns(prev =>
-      prev.map(col => ({
+    setColumns(prev => {
+      const updatedColumns = prev.map(col => ({
         ...col,
         items: col.items
           .map(item => {
@@ -212,8 +210,31 @@ export default function Vendor() {
             };
           })
           .sort((a, b) => b.qty - a.qty),
-      }))
-    );
+      }));
+      
+      // Check if there are still more items of this type with qty > 0
+      let nextItemId: number | null = null;
+      const selectedItemName = selectedItem?.name;
+      
+      for (const col of updatedColumns) {
+        for (const item of col.items) {
+          if (item.name === selectedItemName && item.qty > 0 && item.ids.length > 0) {
+            nextItemId = item.ids[0];
+            break;
+          }
+        }
+        if (nextItemId) break;
+      }
+      
+      // Update selection: if more items exist, keep it with new id; otherwise deselect
+      if (nextItemId) {
+        setSelectedItem({ id: nextItemId, name: selectedItemName! });
+      } else {
+        setSelectedItem(null);
+      }
+      
+      return updatedColumns;
+    });
   };
 
   // ── Increase qty by 1 when returned from shelf, re-sort ───────────────
@@ -228,11 +249,19 @@ export default function Vendor() {
     await fetchOrders();
   };
 
-  // ── Item selection — tap same item again to deselect ──────────────────
+  // ── Item selection — tap same item again to deselect, auto-open shelf ──
   const handleSelectItem = (item: FoodItem) => {
-    setSelectedItem(prev =>
-      prev?.id === item.ids[0] ? null : { id: item.ids[0], name: item.name }
-    );
+    setSelectedItem(prev => {
+      const isCurrentlySelected = prev?.id === item.ids[0];
+      const newSelection = isCurrentlySelected ? null : { id: item.ids[0], name: item.name };
+      
+      // Auto-open shelf when selecting an item
+      if (newSelection) {
+        setShelfBottomSheetOpen(true);
+      }
+      
+      return newSelection;
+    });
   };
 
   const jumpToActive = () => {
