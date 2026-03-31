@@ -5,6 +5,7 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View, Image, ActivityIndi
 import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import VendorStallSelectCard from "@/components/user_components/VendorStallSelectCard";
+import { getCurrentDebugTime, getCurrentDateString } from "../utils/debugTime";
 
 export default function RestaurantScreen() {
   const router = useRouter();
@@ -26,8 +27,7 @@ export default function RestaurantScreen() {
 
   // Get current time rounded up to nearest 10 min
   const getCurrentRoundedTime = (): { hour: string; minute: string } => {
-    const now = new Date();
-    //now.setHours(17, 0, 0, 0); // Hardcode time for testing
+    const now = getCurrentDebugTime();
     const rawMinute = Math.ceil(now.getMinutes() / 10) * 10;
     const overflow = rawMinute >= 60;
     return {
@@ -45,7 +45,7 @@ export default function RestaurantScreen() {
     const open = toMinutes(restaurant.open_time.slice(0, 5));
     const close = toMinutes(restaurant.close_time.slice(0, 5));
 
-    const now = new Date();
+    const now = getCurrentDebugTime();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     const earliest = Math.max(open, nowMinutes + 30);
@@ -53,7 +53,7 @@ export default function RestaurantScreen() {
 
     if (earliest >= latest) return null;
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getCurrentDateString();
     const { data: orders } = await supabase
       .from("orders")
       .select("pick_up_time, status, order_items!inner(rest_id)")

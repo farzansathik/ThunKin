@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import TimeSlotCard from "@/components/user_components/TimeSlotCard";
 import RefreshableScrollView from "@/components/RefreshableScrollView";
+import { getCurrentDebugTime, getCurrentDateString } from "../utils/debugTime";
 
 interface TimeSlot {
   time: string;
@@ -36,7 +37,7 @@ function parseTime(t: string): { h: number; m: number } {
 
 /** Build a Date for today at the given hour+minute */
 function todayAt(h: number, m: number): Date {
-  const d = new Date();
+  const d = getCurrentDebugTime();
   d.setHours(h, m, 0, 0);
   return d;
 }
@@ -79,8 +80,7 @@ export default function TimeSlotScreen() {
     const { h: closeH, m: closeM } = parseTime(restaurantData.close_time);
 
     // 2. "Earliest bookable" = the LATER of (now + 30 min) OR (open + 30 min)
-    const now = new Date();
-    //now.setHours(17, 0, 0, 0); // ------------------------------------------------------ Hardcode to Simulate Fake time for now 
+    const now = getCurrentDebugTime();
     const earliestFromNow = new Date(now.getTime() + 30 * 60 * 1000);
     const openDate = todayAt(openH, openM);
     const earliestFromOpen = new Date(openDate.getTime() + 30 * 60 * 1000);
@@ -93,7 +93,7 @@ export default function TimeSlotScreen() {
     const latestStart = new Date(closeDate.getTime() - 30 * 60 * 1000);
 
     // 4. Fetch all orders for THIS restaurant with a pick_up_time today
-    const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const todayStr = getCurrentDateString(); // "YYYY-MM-DD"
     const { data: orders, error } = await supabase
       .from("orders")
       .select("pick_up_time, status, order_items!inner(rest_id)")

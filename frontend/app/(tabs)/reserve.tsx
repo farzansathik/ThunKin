@@ -12,6 +12,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { getCurrentDebugTime, getCurrentTimeString } from "../../utils/debugTime";
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Octicons from '@expo/vector-icons/Octicons';
 import { useRouter } from "expo-router";
@@ -50,9 +51,8 @@ export default function ReserveScreen() {
   const isCafeteriaOpen = (item: any) => {
     if (!item.status || !item.open_time || !item.close_time) return false;
     
-    const now = new Date();
-    //now.setHours(6, 0, 0, 0); // Hardcode time for testing
-    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const now = getCurrentDebugTime();
+    const currentTime = getCurrentTimeString();
     
     return currentTime >= item.open_time.slice(0, 5) && currentTime < item.close_time.slice(0, 5);
   };

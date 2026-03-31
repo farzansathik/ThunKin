@@ -15,6 +15,7 @@ import Typography from "@/components/typography";
 import RefreshableScrollView from "@/components/RefreshableScrollView";
 import OrderHistoryCard from "@/components/user_components/OrderHistoryCard";
 import { useUser } from "@/context/UserContext";
+import { getCurrentDebugTime, getCurrentDateString } from "../../utils/debugTime";
 
 interface OrderItem {
   id: string;
@@ -183,7 +184,7 @@ export default function HistoryScreen() {
         pending: [],
       };
 
-      const todayStr = new Date().toLocaleDateString("en-CA");
+      const todayStr = getCurrentDateString();
       const todayDate = new Date(todayStr + "T00:00:00");
 
       completeOrders.forEach((order) => {
@@ -275,8 +276,7 @@ export default function HistoryScreen() {
   };
 
   const getCurrentTimeInMinutes = (): number => {
-    const now = new Date();
-    //now.setHours(9, 40, 0, 0); //  ---------------------------- Hardcode current time for testing
+    const now = getCurrentDebugTime();
     return now.getHours() * 60 + now.getMinutes();
   };
 

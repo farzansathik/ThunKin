@@ -8,6 +8,7 @@ import {
 import { FontAwesome6, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Typography from "../typography";
 import { supabase } from "../../lib/supabase";
+import { getCurrentDebugTime, getCurrentTimeString } from "../../utils/debugTime";
 
 type CafeteriaItem = {
   id: string;
@@ -36,9 +37,8 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
   const isCurrentlyOpen = (() => {
     if (!item.status || !item.open_time || !item.close_time) return false;
     
-    const now = new Date();
-    //now.setHours(6, 0, 0, 0); // Hardcode time for testing
-    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const now = getCurrentDebugTime();
+    const currentTime = getCurrentTimeString();
     
     return currentTime >= item.open_time.slice(0, 5) && currentTime < item.close_time.slice(0, 5);
   })();
