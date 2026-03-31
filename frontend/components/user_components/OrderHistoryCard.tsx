@@ -240,25 +240,4 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     aspectRatio: 1,
   },
-  qrLabel: {
-    color: "#A6A5A5",
-  },
-  readyValue: {
-    color: "#1DBA45",  // green to visually distinguish from pickup time
-  },
-  readyBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#1DBA45",
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  readyBadgeText: {
-    color: "#ffffff",
-    fontWeight: "600",
-  },
 });
