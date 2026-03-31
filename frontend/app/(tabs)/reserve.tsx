@@ -46,6 +46,17 @@ export default function ReserveScreen() {
     fetchLocations();
   }, []);
 
+  // Helper function to check if cafeteria is currently open
+  const isCafeteriaOpen = (item: any) => {
+    if (!item.status || !item.open_time || !item.close_time) return false;
+    
+    const now = new Date();
+    now.setHours(17, 50, 0, 0); // Hardcode time for testing
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    return currentTime >= item.open_time.slice(0, 5) && currentTime < item.close_time.slice(0, 5);
+  };
+
   const filteredData = locations.filter((item) => {
     // Search filter: search for location_name or name in Thai and English
     const searchLower = searchQuery.toLowerCase();
@@ -57,6 +68,12 @@ export default function ReserveScreen() {
     const matchesFavoriteFilter = isFavoriteMode ? item.favorite === true : true;
 
     return matchesSearch && matchesFavoriteFilter;
+  }).sort((a, b) => {
+    // Sort: open cafeterias first, closed ones at the bottom
+    const aOpen = isCafeteriaOpen(a);
+    const bOpen = isCafeteriaOpen(b);
+    if (aOpen === bOpen) return 0;
+    return aOpen ? -1 : 1;
   });
 
   return (
@@ -316,12 +333,14 @@ const styles = StyleSheet.create({
     paddingRight: 5,
     paddingVertical: 5,
     borderRadius: 30,
+    borderColor: "#e95d9067",
+    borderWidth: 1.5,
 
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    elevation: 6,
   },
   quickOrderPinkPill: {
     backgroundColor: "#E95D91",

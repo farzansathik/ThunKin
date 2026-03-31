@@ -28,10 +28,21 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
   const [isFavorite, setIsFavorite] = useState(item.favorite ?? false);
 
 // if real data from database is missing any of these fields, use default values to avoid crashes
-  const isOpen = item.status;
   const formatTime = (time: string) => time.slice(0, 5);
   const openTime = item.open_time ? formatTime(item.open_time) : "--:--";
   const closeTime = item.close_time ? formatTime(item.close_time) : "--:--";
+  
+  // Check if cafeteria is currently open based on current time
+  const isCurrentlyOpen = (() => {
+    if (!item.status || !item.open_time || !item.close_time) return false;
+    
+    const now = new Date();
+    now.setHours(17, 50, 0, 0); // Hardcode time for testing
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    return currentTime >= item.open_time.slice(0, 5) && currentTime < item.close_time.slice(0, 5);
+  })();
+  
   const distMin = "0"; // sync with google maps API later when we have real distance data
   const distMeters = "0";
   const name = item.name ?? "โรงอาหาร";
@@ -50,7 +61,10 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
     try {
       const { error } = await supabase
         .from("cafeteria")
-        .update({ favorite: newFavoriteState })
+        .update({ 
+          favorite: newFavoriteState,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", item.id);
 
       if (error) {
@@ -64,11 +78,16 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
     }
   }
 
-  // Hide card if closed (อันที่ปิดเราจะไม่โชว์เลย)
-  if (!isOpen) return null;
+  // Hide card if status is False (not available)
+  if (!item.status) return null;
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={onPress}>
+    <TouchableOpacity 
+      style={[styles.card, !isCurrentlyOpen && { opacity: 0.7 }]} 
+      activeOpacity={isCurrentlyOpen ? 0.85 : 1} 
+      onPress={isCurrentlyOpen ? onPress : undefined} 
+      disabled={!isCurrentlyOpen}
+    >
       {/* Left: Info */}
       <View style={styles.cardInfo}>
 
@@ -89,16 +108,12 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: isOpen ? "#81E687" : "#fd8888" },
+              { backgroundColor: isCurrentlyOpen ? "#81E687" : "#ff7474c0" },
               { opacity: 0.63 },
             ]}
           >
-            <Typography weight="bold" size={14} color={isOpen ? "#007708" : "#EF4444"}
-              style={[
-                { color: isOpen ? "#006b07" : "#EF4444" },
-              ]}
-            >
-              {isOpen ? "OPEN" : "CLOSED"}
+            <Typography weight="bold" size={14} color={isCurrentlyOpen ? "#007708" : "#e83333"}>
+              {isCurrentlyOpen ? "OPEN" : "CLOSED"}
             </Typography>
           </View>
           <Typography fontType={3} weight="bold" size={16} color="#888888">
@@ -181,11 +196,11 @@ const styles = StyleSheet.create({
     borderColor: "#FCE8F0",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#E95D91",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    // shadowColor: "#E95D91",
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // shadowOffset: { width: 0, height: 2 },
+    // elevation: 2,
   },
     distTopRow: {
         flexDirection: "row",
