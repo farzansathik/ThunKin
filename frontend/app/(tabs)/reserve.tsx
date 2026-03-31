@@ -51,7 +51,7 @@ export default function ReserveScreen() {
     if (!item.status || !item.open_time || !item.close_time) return false;
     
     const now = new Date();
-    now.setHours(17, 50, 0, 0); // Hardcode time for testing
+    //now.setHours(6, 0, 0, 0); // Hardcode time for testing
     const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
     return currentTime >= item.open_time.slice(0, 5) && currentTime < item.close_time.slice(0, 5);

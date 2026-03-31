@@ -27,6 +27,7 @@ export default function RestaurantScreen() {
   // Get current time rounded up to nearest 10 min
   const getCurrentRoundedTime = (): { hour: string; minute: string } => {
     const now = new Date();
+    //now.setHours(17, 0, 0, 0); // Hardcode time for testing
     const rawMinute = Math.ceil(now.getMinutes() / 10) * 10;
     const overflow = rawMinute >= 60;
     return {
