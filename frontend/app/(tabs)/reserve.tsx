@@ -156,7 +156,11 @@ export default function ReserveScreen() {
           />
 
           {/* QUICK ORDER FLOATING BUTTON */}
-          <TouchableOpacity style={styles.quickOrderFloatingBtn} activeOpacity={0.85}>
+          <TouchableOpacity 
+            style={styles.quickOrderFloatingBtn} 
+            activeOpacity={0.85}
+            onPress={() => router.push("/aiquickorder")}
+          >
             <Octicons name="sparkles-fill" size={24} color="#DF5789" />
             <View style={styles.quickOrderPinkPill}>
               <Text style={styles.quickOrderText}>QUICK</Text>
