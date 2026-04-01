@@ -21,6 +21,7 @@ export default function RestaurantScreen() {
   const [showUntilPicker, setShowUntilPicker] = useState(false);
 
   const [locationName, setLocationName] = useState("");
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
 
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
   const minuteOptions = ['00', '10', '20', '30', '40', '50'];
@@ -120,19 +121,22 @@ export default function RestaurantScreen() {
       // Fetch location name
       const { data: cafeData } = await supabase
         .from("cafeteria")
-        .select("location_name")
+        .select("location_name, image_url")
         .eq("id", cafeId)
         .single();
 
-      if (cafeData) setLocationName(cafeData.location_name);
-      
+      if (cafeData) {
+        setLocationName(cafeData.location_name);
+        setBannerImage(cafeData.image_url ?? null);
+      }
+
       // Fetch location name
       const { data } = await supabase
         .from("restaurant")
         .select("*")
         .eq("cafe_id", cafeId)
         .eq("status", true)
-        .order("id", { ascending: true });
+        .order("shop_num", { ascending: true });
 
       setAllRestaurants(data || []);
       setRestaurants(data || []);
@@ -313,7 +317,11 @@ export default function RestaurantScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topBanner}>
-        <Image source={{ uri: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800' }} style={styles.bannerImage} />
+        {bannerImage ? (
+          <Image source={{ uri: bannerImage }} style={styles.bannerImage} />
+        ) : (
+          <View style={[styles.bannerImage, { backgroundColor: '#ffffffe8' }]} />
+        )}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color="white" />
         </TouchableOpacity>

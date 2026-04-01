@@ -11,10 +11,11 @@ import {
   Modal,
   Animated,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Fontisto, Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Typography from "@/components/typography";
+import { toJpegUrl } from "@/utils/imageUtils";
 import { useUser } from "../context/UserContext";
 
 interface MenuItem {
@@ -32,6 +33,7 @@ export default function FoodScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedFoodName, setSelectedFoodName] = useState<string>("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [nextPageParams, setNextPageParams] = useState<any>(null);
   const scaleAnim = React.useRef(new Animated.Value(0)).current;
@@ -200,14 +202,17 @@ export default function FoodScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.topBanner}>
-            <Image
-              source={{
-                uri:
-                  foodItem?.image_url ||
-                  `https://loremflickr.com/320/240/food?random=${foodItem?.id}`,
-              }}
-              style={styles.bannerImage}
-            />
+            {/* {foodItem?.image_url && !imgError ? (
+              <Image
+                source={{ uri: toJpegUrl(foodItem.image_url) ?? undefined }}
+                style={styles.bannerImage}
+                onError={() => setImgError(true)}
+              />
+            ) : ( */}
+              <View style={[styles.bannerImage, styles.fallbackBanner]}>
+                <Fontisto name="food" size={300} style={{ top: 30 }} color="#ffffff33" />
+              </View>
+            
 
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={28} color="white" />
@@ -333,6 +338,7 @@ const styles = StyleSheet.create({
   /* Banner */
   topBanner: { height: 200, backgroundColor: "#333" },
   bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
+  fallbackBanner: { backgroundColor: '#333', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   backButton: { position: "absolute", top: 50, left: 20, backgroundColor: "rgba(0,0,0,0.3)", borderRadius: 30, padding: 6 },
 
   /* Product Header */

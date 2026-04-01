@@ -14,10 +14,11 @@ import {
 import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import MenuSelectCard, { MenuItem } from "@/components/user_components/MenuSelectCard";
+import Fontisto from '@expo/vector-icons/Fontisto';
 
 export default function MenuScreen() {
   const router = useRouter();
-  const { shopId, shopName, slotTime } = useLocalSearchParams();
+  const { shopId, shopName, slotTime, shopImage } = useLocalSearchParams();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [selectedFoodName, setSelectedFoodName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,10 +76,13 @@ export default function MenuScreen() {
       
       {/* Banner */}
       <View style={styles.topBanner}>
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800' }} 
-          style={styles.bannerImage} 
-        />
+        {shopImage ? (
+          <Image source={{ uri: shopImage as string }} style={styles.bannerImage} />
+        ) : (
+          <View style={[styles.bannerImage, styles.fallbackBanner]}>
+            <Fontisto name="shopping-store" size={300} style={{top: 30}} color="#ffffff33" />
+          </View>
+        )}
 
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color="white" />
@@ -119,8 +123,9 @@ export default function MenuScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
-  topBanner: { height: 220, backgroundColor: "#333" },
-  bannerImage: { width: "100%", height: "100%", opacity: 0.8 },
+  topBanner: { height: 220, backgroundColor: "#bebebe" },
+  bannerImage: { width: "100%", height: "100%", opacity: 1},
+  fallbackBanner: { backgroundColor: '#e95d90', justifyContent: 'center', alignItems: 'center' },
   backButton: { position: 'absolute', top: 50, left: 20 , backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 30, padding: 6 },
   
   contentCard: { 

@@ -1,28 +1,43 @@
-import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import Typography from "../typography";
+import { Ionicons } from "@expo/vector-icons";
+import { toJpegUrl } from "@/utils/imageUtils";
 
 type Props = {
   item: {
     id: string | number;
     name: string;
+    shop_num: number;
+    image_url: string | null;
   };
   index: number;
 };
 
 export default function VendorStallSelectCard({ item, index }: Props) {
   const router = useRouter();
+  const [imgError, setImgError] = useState(false);
 
   return (
     <TouchableOpacity
       style={styles.shopCard}
-      onPress={() => router.push({ pathname: "/timeslot", params: { shopId: item.id, shopName: item.name } })}
+      onPress={() => router.push({ pathname: "/timeslot", params: { shopId: item.id, shopName: item.name, shopImage: item.image_url ?? '' } })}
     >
-      <Image source={{ uri: `https://loremflickr.com/320/240/food?random=${item.id}` }} style={styles.shopImage} />
+      {item.image_url && !imgError ? (
+        <Image
+          source={{ uri: toJpegUrl(item.image_url) ?? undefined }}
+          style={styles.shopImage}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <View style={[styles.shopImage, styles.fallbackImage]}>
+          <Ionicons name="storefront-outline" size={48} color="#ccc" />
+        </View>
+      )}
       <View style={styles.numberBadge}>
         <Typography size={16} style={styles.numberText}>
-          {item.id}
+          {item.shop_num}
         </Typography>
       </View>
       <Typography weight="bold" size={18} style={styles.shopName}>
@@ -61,6 +76,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   numberText: { color: '#E95D91', fontWeight: 'bold' },
+  fallbackImage: {
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   shopName: { 
     color: '#454545',
     top: 6,

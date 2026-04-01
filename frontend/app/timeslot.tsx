@@ -44,7 +44,7 @@ function todayAt(h: number, m: number): Date {
 
 export default function TimeSlotScreen() {
   const router = useRouter();
-  const { shopId, shopName } = useLocalSearchParams();
+  const { shopId, shopName, shopImage } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [timeGroups, setTimeGroups] = useState<HourGroup[]>([]);
   const [restaurant, setRestaurant] = useState<{
@@ -276,6 +276,7 @@ export default function TimeSlotScreen() {
                     slot={slot}
                     shopId={shopId}
                     shopName={shopName}
+                    shopImage={shopImage}
                   />
                 ))}
               </View>

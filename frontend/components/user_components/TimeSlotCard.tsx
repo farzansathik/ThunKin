@@ -12,9 +12,10 @@ type Props = {
   slot: TimeSlot;
   shopId: string | string[];
   shopName: string | string[];
+  shopImage: string | string[];
 };
 
-export default function TimeSlotCard({ slot, shopId, shopName }: Props) {
+export default function TimeSlotCard({ slot, shopId, shopName, shopImage }: Props) {
   const router = useRouter();
   const isFull = slot.available === 0;
   const isLow = slot.available > 0 && slot.available <= 5;
@@ -27,7 +28,7 @@ export default function TimeSlotCard({ slot, shopId, shopName }: Props) {
       disabled={isFull}
       onPress={() => router.push({
         pathname: "/menu",
-        params: { shopId, shopName, slotTime: slot.time }
+        params: { shopId, shopName, slotTime: slot.time, shopImage }
       })}
     >
     <View style={[styles.availableBadge, { backgroundColor: badgeColor }]}>
