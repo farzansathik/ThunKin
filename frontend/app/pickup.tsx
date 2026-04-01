@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Typography from "@/components/typography";
+import { getCurrentDebugTime } from "@/utils/debugTime";
 
 interface MenuItem {
   id: string;
@@ -109,7 +110,7 @@ export default function StatusScreen() {
             .from("orders")
             .update({ 
               status: "picked_up",
-              updated_at: new Date().toISOString(), 
+              updated_at: getCurrentDebugTime().toISOString(), 
             })
             .eq("id", Number(orderId));
 
@@ -125,7 +126,7 @@ export default function StatusScreen() {
             .from("order_items")
             .update({ 
               status: "picked_up",
-              updated_at: new Date().toISOString(), 
+              updated_at: getCurrentDebugTime().toISOString(), 
             })
             .eq("id", Number(orderItemId));
 
@@ -156,7 +157,7 @@ export default function StatusScreen() {
             .update({
               order_item_id: null,
               status: "empty",
-              updated_at: new Date().toISOString(),
+              updated_at: getCurrentDebugTime().toISOString(),
             })
             .eq("order_item_id", Number(orderItemId));
 

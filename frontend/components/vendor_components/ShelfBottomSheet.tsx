@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 're
 import Typography from '@/components/typography';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { getCurrentDebugTime } from '@/utils/debugTime';
 
 export type ShelfSlot = {
   id: number;
@@ -101,7 +102,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
                   .from('orders')
                   .update({ 
                     status: 'pending',
-                    updated_at: new Date().toISOString(), 
+                    updated_at: getCurrentDebugTime().toISOString(), 
                   })
                   .eq('id', orderItemData.order_id);
               }
@@ -111,7 +112,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
                 .from('order_items')
                 .update({ 
                   status: 'pending',
-                  updated_at: new Date().toISOString(),  
+                  updated_at: getCurrentDebugTime().toISOString(),  
                 })
                 .eq('id', slot.order_item_id);
 
@@ -130,7 +131,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
                 .update({
                   order_item_id: null,
                   status: 'empty',
-                  updated_at: new Date().toISOString(),
+                  updated_at: getCurrentDebugTime().toISOString(),
                 })
                 .eq('id', slot.id);
 
@@ -161,7 +162,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
         .from('orders')
         .update({ 
           status: 'ready',
-          updated_at: new Date().toISOString(), 
+          updated_at: getCurrentDebugTime().toISOString(), 
         })
         .eq('id', orderItemData.order_id);
     }
@@ -171,7 +172,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
       .from('order_items')
       .update({ 
         status: 'ready',
-        updated_at: new Date().toISOString(), 
+        updated_at: getCurrentDebugTime().toISOString(), 
       })
       .eq('id', selectedItemId);
 
@@ -190,8 +191,8 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
       .update({
         order_item_id: selectedItemId,
         status: 'occupied',
-        assigned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        assigned_at: getCurrentDebugTime().toISOString(),
+        updated_at: getCurrentDebugTime().toISOString()
       })
       .eq('id', slot.id);
 

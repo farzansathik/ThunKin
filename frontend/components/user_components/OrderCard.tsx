@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Image, StyleSheet } from "react-native";
 import Typography from "@/components/typography";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { toJpegUrl } from "@/utils/imageUtils";
 
 interface MenuItem {
   id: string;
@@ -15,16 +17,26 @@ interface OrderCardProps {
 }
 
 export default function OrderCard({ foodItem }: OrderCardProps) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <View style={styles.itemCard}>
-      <Image
-        source={{
-          uri:
-            foodItem?.image_url ||
-            `https://loremflickr.com/320/240/food?random=${foodItem?.id}`,
-        }}
-        style={styles.itemImage}
-      />
+        {foodItem?.image_url && !imgError ? (
+          <Image
+            source={{ uri: toJpegUrl(foodItem.image_url) ?? undefined }}
+            style={styles.itemImage}
+            onError={() => setImgError(true)}
+          />
+        ) : (
+        <View style={[styles.itemImage, styles.fallbackImage]}>
+          <Ionicons
+              name="fast-food"
+              size={45}
+              color="#77777733"
+            />
+        </View>
+        )}
+          
       <View style={styles.itemInfo}>
         <Typography size={20} weight="bold" style={styles.itemName}>{foodItem?.name}</Typography>
         <Typography size={12} style={styles.itemSub}>ไม่มีเพิ่มเติม</Typography>
@@ -53,6 +65,12 @@ const styles = StyleSheet.create({
     height: 75,
     borderRadius: 12,
     marginRight: 12,
+  },
+
+  fallbackImage: {
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   itemInfo: {

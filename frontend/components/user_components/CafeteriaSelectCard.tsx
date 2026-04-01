@@ -63,7 +63,7 @@ export default function CafeteriaSelectCard({ item, onPress, onFavoritePress }: 
         .from("cafeteria")
         .update({ 
           favorite: newFavoriteState,
-          updated_at: new Date().toISOString()
+          updated_at: getCurrentDebugTime().toISOString()
         })
         .eq("id", item.id);
 

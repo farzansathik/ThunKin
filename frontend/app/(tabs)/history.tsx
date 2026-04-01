@@ -24,6 +24,7 @@ interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  image_url: string;
 }
 
 interface Order {
@@ -122,7 +123,7 @@ export default function HistoryScreen() {
 
       const { data: menuData, error: menuError } = await supabase
         .from("menu")
-        .select("id, name, price");
+        .select("id, name, price, image_url");
 
       if (menuError) throw menuError;
 
@@ -147,6 +148,7 @@ export default function HistoryScreen() {
           name: menu?.name || "Unknown Item",
           price: menu?.price || 0,
           quantity: 1,
+          image_url: menu?.image_url || null
         };
 
         if (!itemsByOrder.has(item.order_id)) {

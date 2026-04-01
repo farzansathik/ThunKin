@@ -11,7 +11,7 @@ import {
   Modal,
   Animated,
 } from "react-native";
-import { Fontisto, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Typography from "@/components/typography";
@@ -202,17 +202,17 @@ export default function FoodScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.topBanner}>
-            {/* {foodItem?.image_url && !imgError ? (
+            {foodItem?.image_url && !imgError ? (
               <Image
                 source={{ uri: toJpegUrl(foodItem.image_url) ?? undefined }}
                 style={styles.bannerImage}
                 onError={() => setImgError(true)}
               />
-            ) : ( */}
+            ) : (
               <View style={[styles.bannerImage, styles.fallbackBanner]}>
-                <Fontisto name="food" size={300} style={{ top: 30 }} color="#ffffff33" />
+                <Ionicons name="fast-food" size={215} style={{ top: 30, left: 70 }} color="#ffffff33" />
               </View>
-            
+            )}
 
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={28} color="white" />

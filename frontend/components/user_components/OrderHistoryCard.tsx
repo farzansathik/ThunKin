@@ -1,8 +1,9 @@
-import React from "react";
-import { View, StyleSheet, TouchableOpacity, Animated, Easing } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Animated, Easing, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Typography from "@/components/typography";
+import { toJpegUrl } from "@/utils/imageUtils";
 
 interface OrderItem {
   id: string;
@@ -11,6 +12,7 @@ interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  image_url?: string;
 }
 
 interface Order {
@@ -35,6 +37,7 @@ interface Props {
 export default function OrderHistoryCard({ order, formatTime }: Props) {
   const router = useRouter();
   const pulseAnimReady = React.useRef(new Animated.Value(1)).current;
+  const [imgError, setImgError] = useState(false);
 
   React.useEffect(() => {
     if (order.status === "ready" && order.updated_at) {
@@ -75,10 +78,26 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
     }
   };
 
+  const firstItem = order.items[0];
+  const imageUrl = toJpegUrl(firstItem?.image_url);
   return (
     <View style={styles.orderCard}>
       <View style={styles.orderCardLeft}>
-        <View style={[styles.orderImage, { backgroundColor: "#E0E0E0" }]} />
+        {imageUrl && !imgError ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.orderImage}
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <View style={[styles.orderImage, styles.fallbackImage]}>
+            <Ionicons
+              name="fast-food"
+              size={35}
+              color="#77777733"
+            />
+          </View>
+        )}
       </View>
 
       <View style={styles.orderCardMiddle}>
@@ -168,10 +187,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   orderImage: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 80,
     borderRadius: 10,
     backgroundColor: "#E0E0E0",
+  },
+  fallbackImage: {
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
   },
   orderCardMiddle: {
     flex: 1,

@@ -16,6 +16,7 @@ import AvailableSpaceButton from "@/components/vendor_components/AvailableSpaceB
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useUser } from "../context/UserContext";
+import { getCurrentDebugTime, getCurrentDateString } from "../utils/debugTime";
 
 type Column = {
   time: string;
@@ -74,10 +75,9 @@ export default function Vendor() {
     // 3. Fetch today's order_items — pending AND ready
     //    pending = still in queue (show with actual qty)
     //    ready   = already on shelf (show with qty 0, card stays visible)
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const todayStr = getCurrentDateString();
+    const todayStart = new Date(`${todayStr}T00:00:00`);
+    const todayEnd = new Date(`${todayStr}T23:59:59`);
 
     const { data: orderItems, error: orderError } = await supabase
       .from("order_items")
@@ -129,10 +129,7 @@ export default function Vendor() {
       grouped[key].sort((a, b) => b.qty - a.qty);
     });
 
-    // ── DEBUG: force current time to test isActive ─────────────────────
-    // const now = new Date(); now.setHours(11, 0, 0, 0);  ------------------- Hardcode to Simulate Fake time for now
-    // ──────────────────────────────────────────────────────────────────
-    const now = new Date(); // ← real time
+    const now = getCurrentDebugTime();
 
     // 5. Build columns with correct visibility rules:
     //
@@ -192,7 +189,7 @@ export default function Vendor() {
     // Update database: mark as ready (on shelf) and update timestamp
     await supabase
       .from("order_items")
-      .update({ status: "ready", updated_at: new Date().toISOString() })
+      .update({ status: "ready", updated_at: getCurrentDebugTime().toISOString() })
       .eq("id", itemId)
     
     setColumns(prev => {
@@ -242,7 +239,7 @@ export default function Vendor() {
     // Update database: mark back as pending (return to queue) and update timestamp
     await supabase
       .from("order_items")
-      .update({ status: "pending", updated_at: new Date().toISOString() })
+      .update({ status: "pending", updated_at: getCurrentDebugTime().toISOString() })
       .eq("id", itemId)
     
     // Re-fetch orders to properly merge returned items with existing orders of same food
@@ -284,7 +281,9 @@ export default function Vendor() {
 
   const generateSlots = (openTime: string, closeTime: string) => {
     const slots: { start: string; end: string; startDate: Date }[] = [];
-    const today = new Date();
+    const base = getCurrentDebugTime();
+    const today = new Date(base);
+    today.setHours(0, 0, 0, 0);
 
     const [openH, openM] = openTime.split(":").map(Number);
     const [closeH, closeM] = closeTime.split(":").map(Number);
