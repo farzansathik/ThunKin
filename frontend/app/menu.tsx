@@ -28,7 +28,8 @@ export default function MenuScreen() {
     const { data, error } = await supabase
       .from("menu")
       .select("*")
-      .eq("rest_id", shopId);
+      .eq("rest_id", shopId)
+      .eq("status", true);
 
     if (!error) setMenuItems(data || []);
     setLoading(false);

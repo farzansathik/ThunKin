@@ -11,7 +11,7 @@
 
 // ========== CONFIGURATION ==========
 // Set to true to enable debug mode, false to use real time
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false;
 
 // Your hardcoded debug time (HH:MM format, 24-hour)
 // Example values:

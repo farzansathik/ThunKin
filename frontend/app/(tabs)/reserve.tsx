@@ -31,7 +31,7 @@ export default function ReserveScreen() {
     const { data, error } = await supabase
       .from("cafeteria")                          
       .select("id, location_name, name, status, open_time, close_time, favorite")  
-      .order("location_name", { ascending: true });   //เดี่ยวถ้าผูกกับ google maps API ได้ค่อยเอา order by distance มาใส่แทน
+      .order("id", { ascending: true });   //เดี่ยวถ้าผูกกับ google maps API ได้ค่อยเอา order by distance มาใส่แทน
 
     if (!error && data) {
       const uniqueMap = new Map();
