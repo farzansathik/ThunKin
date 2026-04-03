@@ -8,7 +8,7 @@ import {
   View,
   ActivityIndicator,
   StatusBar,
-  SafeAreaView,
+  Platform,
   Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -82,7 +82,7 @@ export default function ReserveScreen() {
 
       {/* HEADER */}
       <View style={styles.header}>
-        <SafeAreaView>
+        <View>
           {/* Decorative dish image — behind everything */}
           <Image
             source={require("../../assets/images/Thunkin_images/UserSide_img/dish_banner.png")}
@@ -121,7 +121,7 @@ export default function ReserveScreen() {
               <Ionicons name="map-outline" size={14} color="#888" style={{ marginRight: 5 }} />
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
 
     {/* CONTENT */}
@@ -184,9 +184,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#DF5789",
     paddingBottom: 22,
     paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 25 : 0,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    height: 160,
+    height: Platform.OS === "ios" ? 190 : 160,
     overflow: "hidden", // clips dish image inside rounded header
     elevation: 10,
   },

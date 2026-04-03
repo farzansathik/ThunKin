@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffffbd",
   },
   header: {
-    height: 115,
+    height: Platform.OS === "ios" ? 130 : 115,
     backgroundColor: "#E95D91",
     borderBottomLeftRadius: 22,
     borderBottomRightRadius: 22,

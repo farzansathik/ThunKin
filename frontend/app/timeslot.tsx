@@ -8,6 +8,7 @@ import {
   View,
   StatusBar,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
@@ -44,7 +45,7 @@ function todayAt(h: number, m: number): Date {
 
 export default function TimeSlotScreen() {
   const router = useRouter();
-  const { shopId, shopName, shopImage } = useLocalSearchParams();
+  const { shopId, shopName, shopImage, shopNum } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [timeGroups, setTimeGroups] = useState<HourGroup[]>([]);
   const [restaurant, setRestaurant] = useState<{
@@ -218,7 +219,7 @@ export default function TimeSlotScreen() {
         <View style={styles.headerInfo}>
           <View style={styles.shopBadge}>
             <Typography weight="bold" size={16} style={{ color: "#E95D91" }}>
-              {shopId}
+              {shopNum}
             </Typography>
           </View>
           <Typography weight="bold" style={{ color: "white", left: 5 }} size={28}>
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
   header: {
     backgroundColor: "#E95D91",
-    paddingTop: 40,
+    paddingTop: Platform.OS === "ios" ? 55 : 40,
     paddingBottom: 12,
     alignItems: "center",
     elevation: 10,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: "absolute",
     left: 10,
-    paddingTop: 48,
+    paddingTop: Platform.OS === "ios" ? 63 : 48,
   },
   headerInfo: { flexDirection: "row", alignItems: "center", left: 10 },
   shopBadge: {
@@ -328,6 +329,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     height: 60,
     elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   pinkIndicator: {
     width: 5,
