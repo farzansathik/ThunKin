@@ -7,6 +7,7 @@ import {
   StatusBar,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { Ionicons, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -98,7 +99,7 @@ export default function AIQuickOrderScreen() {
       <View style={styles.labelSection}>
         <View style={styles.labelLeft}>
           <View style={styles.pinkBar} />
-          <Typography weight="bold" size={22} style={styles.labelText}>AI Suggested Meals</Typography>
+          <Typography weight="bold" size={21} style={styles.labelText}>AI Suggested Meals</Typography>
         </View>
         <View style={styles.smartPicksBadge}>
           <Octicons name="sparkles-fill" size={16} color="#DF5789" />
@@ -140,13 +141,17 @@ const styles = StyleSheet.create({
   /* ── HEADER ── */
   header: {
     backgroundColor: "#E95D91",
-    paddingTop: 50,
+    paddingTop: Platform.OS === "ios" ? 60 : 50,
     paddingBottom: 20,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   backButton: {
     marginRight: 16,
@@ -174,6 +179,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: "white",
     elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   labelLeft: {
     flexDirection: "row",

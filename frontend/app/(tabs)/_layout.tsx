@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     // iOS — negative Y pushes shadow upward
     shadowColor: "#4b1d2e",
     shadowOpacity: 0.5,
-    shadowRadius: 12,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: -3 },
     // Android — elevation always goes downward, can't go up
     elevation: 20,
