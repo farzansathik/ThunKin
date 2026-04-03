@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "thunkin",
+    "name": "Thunkin",
     "slug": "thunkin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/Thunkin_images/ThunKin_icon.png",
     "scheme": "thunkin",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -44,6 +44,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "778aca1b-b67e-49de-a294-a53eb3ac9035"
+      }
+    },
+    "owner": "thanatat_d",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/778aca1b-b67e-49de-a294-a53eb3ac9035"
     }
   }
 }
