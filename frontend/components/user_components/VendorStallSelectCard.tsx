@@ -22,7 +22,7 @@ export default function VendorStallSelectCard({ item, index }: Props) {
   return (
     <TouchableOpacity
       style={styles.shopCard}
-      onPress={() => router.push({ pathname: "/timeslot", params: { shopId: item.id, shopName: item.name, shopImage: item.image_url ?? '' } })}
+      onPress={() => router.push({ pathname: "/timeslot", params: { shopId: item.id, shopNum: item.shop_num, shopName: item.name, shopImage: item.image_url ?? '' } })}
     >
       {item.image_url && !imgError ? (
         <Image
