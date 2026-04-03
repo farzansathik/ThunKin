@@ -8,6 +8,7 @@ import {
   View,
   StatusBar,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
   header: {
     backgroundColor: "#E95D91",
-    paddingTop: 40,
+    paddingTop: Platform.OS === "ios" ? 55 : 40,
     paddingBottom: 12,
     alignItems: "center",
     elevation: 10,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: "absolute",
     left: 10,
-    paddingTop: 48,
+    paddingTop: Platform.OS === "ios" ? 63 : 48,
   },
   headerInfo: { flexDirection: "row", alignItems: "center", left: 10 },
   shopBadge: {
@@ -328,6 +329,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     height: 60,
     elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   pinkIndicator: {
     width: 5,

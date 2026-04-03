@@ -36,7 +36,7 @@ export default function VendorStallSelectCard({ item, index }: Props) {
         </View>
       )}
       <View style={styles.numberBadge}>
-        <Typography size={16} style={styles.numberText}>
+        <Typography weight="bold" size={16} style={styles.numberText}>
           {item.shop_num}
         </Typography>
       </View>
@@ -56,6 +56,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     elevation: 3,
     backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   shopImage: { 
     width: '100%', 
@@ -74,6 +78,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   numberText: { color: '#E95D91', fontWeight: 'bold' },
   fallbackImage: {

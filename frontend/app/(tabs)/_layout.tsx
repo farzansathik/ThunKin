@@ -127,18 +127,19 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: "#DF5789",
     borderTopWidth: 0,
-    height: Platform.OS === "ios" ? 106 : 90,
-    paddingBottom: Platform.OS === "ios" ? 28 : 12,
-    paddingTop: Platform.OS === "ios" ? 8 : 6,
+    height: 90,
+    paddingBottom: 12,
+    paddingTop: 6,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
+    paddingLeft: 3,
     position: "absolute",
 
     // iOS — negative Y pushes shadow upward
     shadowColor: "#4b1d2e",
     shadowOpacity: 0.5,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: -6 },
+    shadowOffset: { width: 0, height: -3 },
     // Android — elevation always goes downward, can't go up
     elevation: 20,
   },

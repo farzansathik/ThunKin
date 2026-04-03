@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View, Image, ActivityIndicator, Modal, ScrollView } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Image, ActivityIndicator, Modal, ScrollView, Platform, Animated } from "react-native";
 import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import VendorStallSelectCard from "@/components/user_components/VendorStallSelectCard";
@@ -184,10 +184,16 @@ export default function RestaurantScreen() {
 
     const [selectedHour, setSelectedHour] = useState(defaultHour);
     const [selectedMinute, setSelectedMinute] = useState(defaultMinute);
+    const hourScrollRef = React.useRef<ScrollView>(null);
+    const minuteScrollRef = React.useRef<ScrollView>(null);
+
+    const backdropAnim = React.useRef(new Animated.Value(0)).current;
 
     // Reset local state whenever the modal opens
     useEffect(() => {
       if (visible) {
+        backdropAnim.setValue(0);
+        
         const h = currentValue
           ? currentValue.split(':')[0]
           : minTime
@@ -200,6 +206,25 @@ export default function RestaurantScreen() {
             : nowMinute;
         setSelectedHour(h);
         setSelectedMinute(m);
+
+        // Fade in backdrop
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+
+        // Scroll to selected position after modal opens
+        setTimeout(() => {
+          const hourIndex = allowedHours.indexOf(h);
+          const minuteIndex = minuteOptions.indexOf(m);
+          if (hourIndex >= 0) {
+            hourScrollRef.current?.scrollTo({ y: hourIndex * 50, animated: true });
+          }
+          if (minuteIndex >= 0) {
+            minuteScrollRef.current?.scrollTo({ y: minuteIndex * 50, animated: true });
+          }
+        }, 150);
       }
     }, [visible]);
 
@@ -216,33 +241,57 @@ export default function RestaurantScreen() {
     // If selected minute is no longer valid after hour changes, snap to first valid
     useEffect(() => {
       if (!allowedMinutes.includes(selectedMinute)) {
-        setSelectedMinute(allowedMinutes[0] ?? '00');
+        const newMinute = allowedMinutes[0] ?? '00';
+        setSelectedMinute(newMinute);
+        setTimeout(() => {
+          minuteScrollRef.current?.scrollTo({ y: 0, animated: true });
+        }, 50);
       }
     }, [selectedHour]);
 
     const handleSelect = () => {
       onSelect(`${selectedHour}:${selectedMinute}`);
-      onClose();
+      closeWithAnimation();
     };
 
     const handleClear = () => {
       onClear();
-      onClose();
+      closeWithAnimation();
+    };
+
+    const closeWithAnimation = () => {
+      Animated.timing(backdropAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => onClose());
     };
 
     return (
-      <Modal visible={visible} transparent animationType="slide">
+      <Modal visible={visible} transparent animationType="none">
         <View style={styles.modalOverlay}>
-          {/* Tapping the dim area closes without saving */}
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={onClose} />
+          {/* Backdrop fades */}
+          <Animated.View
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.55)', opacity: backdropAnim }]}
+          />
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={closeWithAnimation} />
 
-          <View style={styles.modalContent}>
+          {/* Panel slides up manually */}
+          <Animated.View style={[styles.modalContent, {
+            paddingBottom: Platform.OS === 'ios' ? 30 : 0,
+            transform: [{
+              translateY: backdropAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [600, 0],
+              })
+            }]
+          }]}>
             {/* Handle bar */}
             <View style={styles.handleBar} />
 
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{title}</Text>
-              <TouchableOpacity onPress={onClose}>
+              <TouchableOpacity onPress={closeWithAnimation}>
                 <Ionicons name="close" size={28} color="#575757" />
               </TouchableOpacity>
             </View>
@@ -252,6 +301,7 @@ export default function RestaurantScreen() {
               <View style={styles.pickerColumn}>
                 <Text style={styles.pickerLabel}>Hour</Text>
                 <ScrollView
+                  ref={hourScrollRef}
                   style={styles.picker}
                   snapToInterval={50}
                   decelerationRate="fast"
@@ -277,6 +327,7 @@ export default function RestaurantScreen() {
               <View style={styles.pickerColumn}>
                 <Text style={styles.pickerLabel}>Minute</Text>
                 <ScrollView
+                  ref={minuteScrollRef}
                   style={styles.picker}
                   snapToInterval={50}
                   decelerationRate="fast"
@@ -308,7 +359,7 @@ export default function RestaurantScreen() {
             <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
               <Text style={styles.clearButtonText}>Clear Filter</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     );
@@ -524,7 +575,6 @@ const styles = StyleSheet.create({
   // ── Modal ──────────────────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
