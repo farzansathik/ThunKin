@@ -2,8 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { useUser } from "../../context/UserContext";
+
 
 const ACTIVE_COLOR = "#FFFFFF";
 const INACTIVE_COLOR = "rgba(255,255,255,0.4)";
@@ -12,6 +14,10 @@ const DisabledTab = (props: any) => (
 );
 
 export default function TabLayout() {
+  const { userId } = useUser();
+
+  if (!userId) return <Redirect href="/login" />;
+
   return (
     <Tabs
       initialRouteName="reserve"
