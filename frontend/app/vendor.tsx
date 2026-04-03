@@ -49,7 +49,13 @@ export default function Vendor() {
   }, []);
 
   useEffect(() => {
-    if (restId) fetchOrders();
+    if (!restId) return;
+    
+    fetchOrders(); // Initial load
+    
+    const interval = setInterval(fetchOrders, 3000); // 3 seconds for queue board
+    
+    return () => clearInterval(interval);
   }, [restId]);
 
   const fetchOrders = useCallback(async () => {
@@ -252,9 +258,11 @@ export default function Vendor() {
       const isCurrentlySelected = prev?.id === item.ids[0];
       const newSelection = isCurrentlySelected ? null : { id: item.ids[0], name: item.name };
       
-      // Auto-open shelf when selecting an item
+      // Auto-open shelf when selecting, auto-close when deselecting
       if (newSelection) {
         setShelfBottomSheetOpen(true);
+      } else {
+        setShelfBottomSheetOpen(false);
       }
       
       return newSelection;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import Typography from '@/components/typography';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -37,15 +37,45 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
   onAssigned,
   onCleared,
 }) => {
-  const [slots, setSlots] = useState<ShelfSlot[]>([]);
-  const [loading, setLoading] = useState(false);
+const [slots, setSlots] = useState<ShelfSlot[]>([]);
+const [loading, setLoading] = useState(false);
+const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (isVisible) fetchSlots();
-  }, [isVisible]);
+// Store previous data to prevent re-render
+const prevSlotsRef = useRef<ShelfSlot[] | null>(null);
+
+// Auto-fetch when panel is open
+useEffect(() => {
+  if (isVisible) {
+    fetchSlots(); // Initial fetch
+
+    // Prevent duplicate intervals
+    if (!intervalRef.current) {
+      intervalRef.current = setInterval(() => {
+        fetchSlots();
+      }, 3000);
+    }
+  } else {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }
+
+  // Cleanup on unmount
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+}, [isVisible, restId]);
 
   const fetchSlots = async () => {
-    setLoading(true);
+    // Only show loading on first load
+    if (!prevSlotsRef.current) {
+      setLoading(true);
+    }
 
     const { data, error } = await supabase
       .from('shelf_slots')
@@ -69,8 +99,28 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
         status: row.status,
         menu_name: row.order_items?.menu?.name ?? null,
       }));
-      setSlots(mapped);
+    
+      // Compare with previous data
+    const isSame =
+      prevSlotsRef.current &&
+      prevSlotsRef.current.length === mapped.length &&
+      prevSlotsRef.current.every((item, i) =>
+        item.id === mapped[i].id &&
+        item.status === mapped[i].status &&
+        item.order_item_id === mapped[i].order_item_id &&
+        item.menu_name === mapped[i].menu_name
+      );
+
+    // STOP re-render if nothing changed
+    if (isSame) {
+      setLoading(false);
+      return;
     }
+
+    // Only update when changed
+    prevSlotsRef.current = mapped;
+    setSlots(mapped);
+  }
 
     setLoading(false);
   };

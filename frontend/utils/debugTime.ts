@@ -18,7 +18,7 @@ export const DEBUG_MODE = false;
 // "08:00" - 8 AM
 // "12:30" - 12:30 PM
 // "18:45" - 6:45 PM
-export const DEBUG_TIME = "12:50";
+export const DEBUG_TIME = "12:00";
 
 // Optional: Set a specific debug date (YYYY-MM-DD format)
 // Leave as null to use today's date
