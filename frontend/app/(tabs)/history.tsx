@@ -97,7 +97,11 @@ export default function HistoryScreen() {
   // });
 
   useEffect(() => {
+    if (!userId) return;
     fetchOrders();
+
+    const interval = setInterval(fetchOrders, 10000); // refresh every 10 seconds
+    return () => clearInterval(interval);
   }, [userId]);
 
   const fetchOrders = async () => {
@@ -303,10 +307,20 @@ export default function HistoryScreen() {
   const renderNowSection = (readyOrders: Order[], pendingOrders: Order[]) => {
     const nowReadyOrders = readyOrders.filter(isInNowSection);
     const nowPendingOrders = pendingOrders.filter(isInNowSection);
-    const allNowOrders = [...nowReadyOrders, ...nowPendingOrders];
+    
+    // Ready orders sort by updated_at (when vendor marked ready), pending by pickup time
+    const sortedReady = [...nowReadyOrders].sort((a, b) => {
+      const aTime = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const bTime = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return aTime - bTime; // earliest marked ready first
+    });
+    const sortedPending = sortOrdersByPickupTime(nowPendingOrders);
+    
+    // Ready first, then pending — each sorted by time
+    const allNowOrders = [...sortedReady, ...sortedPending];
     
     if (allNowOrders.length === 0) return null;
-    const sortedOrders = sortOrdersByPickupTime(allNowOrders);
+    const sortedOrders = allNowOrders;
 
     return (
       <View style={styles.boxedSection}>
