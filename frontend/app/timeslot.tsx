@@ -27,8 +27,8 @@ interface HourGroup {
   slots: TimeSlot[];
 }
 
-const DEFAULT_CAPACITY = 12; // avg baseline shown to users
-const MAX_CAPACITY = 16;
+export const DEFAULT_CAPACITY = 12; // avg baseline shown to users
+export const MAX_CAPACITY = 16;
 
 /** Parse "HH:MM:SS" or "HH:MM" into { h, m } */
 function parseTime(t: string): { h: number; m: number } {
@@ -80,11 +80,11 @@ export default function TimeSlotScreen() {
     const { h: openH, m: openM } = parseTime(restaurantData.open_time);
     const { h: closeH, m: closeM } = parseTime(restaurantData.close_time);
 
-    // 2. "Earliest bookable" = the LATER of (now + 30 min) OR (open + 30 min)
+    // 2. "Earliest bookable" = the LATER of (now + 20 min) OR (open + 20 min)
     const now = getCurrentDebugTime();
-    const earliestFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+    const earliestFromNow = new Date(now.getTime() + 20 * 60 * 1000);
     const openDate = todayAt(openH, openM);
-    const earliestFromOpen = new Date(openDate.getTime() + 30 * 60 * 1000);
+    const earliestFromOpen = new Date(openDate.getTime() + 20 * 60 * 1000);
 
     // Earliest bookable = whichever boundary is later
     const earliest = earliestFromNow > earliestFromOpen ? earliestFromNow : earliestFromOpen;

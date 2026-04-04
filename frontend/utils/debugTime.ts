@@ -11,14 +11,14 @@
 
 // ========== CONFIGURATION ==========
 // Set to true to enable debug mode, false to use real time
-export const DEBUG_MODE = false;
+export const DEBUG_MODE = true;
 
 // Your hardcoded debug time (HH:MM format, 24-hour)
 // Example values:
 // "08:00" - 8 AM
 // "12:30" - 12:30 PM
 // "18:45" - 6:45 PM
-export const DEBUG_TIME = "12:00";
+export const DEBUG_TIME = "06:20";
 
 // Optional: Set a specific debug date (YYYY-MM-DD format)
 // Leave as null to use today's date
@@ -74,7 +74,10 @@ export function getCurrentTimeString(): string {
  */
 export function getCurrentDateString(): string {
   const now = getCurrentDebugTime();
-  return now.toISOString().slice(0, 10);
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 /**

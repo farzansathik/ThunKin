@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import VendorStallSelectCard from "@/components/user_components/VendorStallSelectCard";
 import { getCurrentDebugTime, getCurrentDateString } from "../utils/debugTime";
+import { DEFAULT_CAPACITY } from "./timeslot";
 
 export default function RestaurantScreen() {
   const router = useRouter();
@@ -75,7 +76,7 @@ export default function RestaurantScreen() {
 
     for (let m = earliest; m <= latest; m += 10) {
       const used = countMap[m] ?? 0;
-      if (used < 12) {
+      if (used < DEFAULT_CAPACITY) {
         if (actualEarliest === null) actualEarliest = m;
         actualLatest = m;
       }

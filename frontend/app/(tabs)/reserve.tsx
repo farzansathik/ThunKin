@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 25 : 0,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    height: Platform.OS === "ios" ? 190 : 160,
+    height: Platform.OS === "ios" ? 180 : 160,
     overflow: "hidden", // clips dish image inside rounded header
     elevation: 10,
   },

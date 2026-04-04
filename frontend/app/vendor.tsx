@@ -48,16 +48,6 @@ export default function Vendor() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!restId) return;
-    
-    fetchOrders(); // Initial load
-    
-    const interval = setInterval(fetchOrders, 3000); // 3 seconds for queue board
-    
-    return () => clearInterval(interval);
-  }, [restId]);
-
   const fetchOrders = useCallback(async () => {
     if (!restId) return;
 
@@ -67,6 +57,8 @@ export default function Vendor() {
       .select("open_time, close_time, vendor_name")
       .eq("id", restId)
       .single();
+
+    console.log("restData:", restData, "restError:", restError);
 
     if (restError || !restData) {
       console.error("Failed to fetch restaurant:", restError);
@@ -82,8 +74,6 @@ export default function Vendor() {
     //    pending = still in queue (show with actual qty)
     //    ready   = already on shelf (show with qty 0, card stays visible)
     const todayStr = getCurrentDateString();
-    const todayStart = new Date(`${todayStr}T00:00:00`);
-    const todayEnd = new Date(`${todayStr}T23:59:59`);
 
     const { data: orderItems, error: orderError } = await supabase
       .from("order_items")
@@ -96,8 +86,16 @@ export default function Vendor() {
       `)
       .eq("rest_id", restId)
       .in("status", ["pending", "ready"])      // ← fetch both
-      .gte("orders.pick_up_time", todayStart.toISOString())
-      .lte("orders.pick_up_time", todayEnd.toISOString());
+      .gte("orders.pick_up_time", `${todayStr} 00:00:00`)      // today's orders only
+      .lte("orders.pick_up_time", `${todayStr} 23:59:59`);
+
+    console.log("todayStr:", todayStr);
+    console.log("pick_up_time stored as:", "2026-04-04 06:30:00");
+    console.log("filter gte:", `${todayStr} 00:00:00`);
+
+    console.log("orderItems:", orderItems);
+    console.log("orderError:", orderError);
+    console.log("ALL orderItems:", orderItems);
 
     if (orderError) {
       console.error("Failed to fetch orders:", orderError);
@@ -189,6 +187,18 @@ export default function Vendor() {
     nextOrderIndexRef.current = foundNextOrderIndex;
     setColumns(builtColumns);
   }, [restId]);
+
+  useEffect(() => {
+    if (!restId) return;
+
+    fetchOrders();
+
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
 
   // ── Decrease qty by 1, consume first id from ids, sort so 0s sink ────
   const handleAssigned = async (itemId: number) => {
@@ -297,12 +307,12 @@ export default function Vendor() {
     const [closeH, closeM] = closeTime.split(":").map(Number);
 
     const cursor = new Date(today);
-    cursor.setHours(openH, openM + 30, 0, 0); // 30 min after open
+    cursor.setHours(openH, openM + 20, 0, 0); // 20 min after open
 
     const closeDate = new Date(today);
     closeDate.setHours(closeH, closeM - 30, 0, 0); // 30 min before close
 
-    while (cursor < closeDate) {
+    while (cursor <= closeDate) {
       const startStr = formatTime(cursor);
       const next = new Date(cursor);
       next.setMinutes(next.getMinutes() + 10);
