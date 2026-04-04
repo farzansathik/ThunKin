@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   StatusBar,
@@ -11,9 +10,10 @@ import {
 } from "react-native";
 import { Ionicons, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
 import Typography from "@/components/typography";
 import MealSuggestCard from "@/components/user_components/MealSuggestCard";
+import { fetchAISuggestions, AISuggestion } from "@/utils/aiSuggestions";
+import { useUser } from "@/context/UserContext";
 
 interface MealItem {
   id: string;
@@ -22,50 +22,50 @@ interface MealItem {
   price: number;
   timeSlot: string;
   timeStatus: "available" | "limited";
+  menuId: number;
+  restaurantId: number;
 }
 
 export default function AIQuickOrderScreen() {
   const router = useRouter();
+  const { userId } = useUser();
   const [meals, setMeals] = useState<MealItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAISuggestedMeals();
-  }, []);
+  }, [userId]);
 
   const fetchAISuggestedMeals = async () => {
-    try {
-      // Mock data for demo - replace with actual data when you have images
-      const mockMeals: MealItem[] = [
-        {
-          id: "1",
-          name: "ข้าวเหนียวไก่",
-          restaurant: "iCanteen - ร้านอาหาร",
-          price: 30,
-          timeSlot: "12:20 - 12:30",
-          timeStatus: "available",
-        },
-        {
-          id: "2",
-          name: "น้ำตกหมู",
-          restaurant: "iCanteen - ร้านอาหาร",
-          price: 40,
-          timeSlot: "12:30 - 12:40",
-          timeStatus: "available",
-        },
-        {
-          id: "3",
-          name: "ข้าวเหนียวไก่",
-          restaurant: "iCanteen - ร้านอาหาร",
-          price: 30,
-          timeSlot: "12:30 - 12:40",
-          timeStatus: "available",
-        },
-      ];
+    if (!userId) {
+      setLoading(false);
+      setError("Please log in to get suggestions.");
+      return;
+    }
 
-      setMeals(mockMeals);
-    } catch (error) {
-      console.error("Error fetching meals:", error);
+    try {
+      setLoading(true);
+      setError(null);
+
+      const suggestions: AISuggestion[] = await fetchAISuggestions(userId);
+
+      // Map AISuggestion → MealItem for the card component
+      const mapped: MealItem[] = suggestions.map(s => ({
+        id: String(s.menuId),
+        name: s.menuName,
+        restaurant: s.restaurantName,
+        price: s.price,
+        timeSlot: s.timeSlot,
+        timeStatus: "available",
+        menuId: s.menuId,
+        restaurantId: s.restaurantId,
+      }));
+
+      setMeals(mapped);
+    } catch (err) {
+      console.error("Error fetching AI meals:", err);
+      setError("Could not load suggestions. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -76,44 +76,109 @@ export default function AIQuickOrderScreen() {
   };
 
   const handleMealPress = (mealId: string) => {
-    // Navigate to meal detail or add to cart
-    console.log("Selected meal:", mealId);
+    const meal = meals.find(m => m.id === mealId);
+    if (!meal) return;
+
+    router.push({
+      pathname: "/food",
+      params: {
+        foodId: meal.menuId,
+        foodName: meal.name,
+        shopId: meal.restaurantId,
+        shopName: meal.restaurant,
+        slotTime: meal.timeSlot,
+      },
+    });
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* HEADER */}
+      {/* ── HEADER ────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="white" />
         </TouchableOpacity>
+
         <View style={styles.headerCenter}>
-          <Typography size={26} weight="bold" style={styles.headerTitle}>All Quick Orders</Typography>
+          <Typography size={26} weight="bold" style={styles.headerTitle}>
+            All Quick Orders
+          </Typography>
         </View>
-        <View style={styles.headerSpacer} />
+
+        {/* Refresh button */}
+        <TouchableOpacity
+          onPress={fetchAISuggestedMeals}
+          disabled={loading}
+          style={styles.refreshButton}
+        >
+          <Ionicons
+            name="refresh"
+            size={22}
+            color={loading ? "rgba(255,255,255,0.4)" : "white"}
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* AI SUGGESTED MEALS LABEL */}
+      {/* ── LABEL SECTION ─────────────────────────────── */}
       <View style={styles.labelSection}>
         <View style={styles.labelLeft}>
           <View style={styles.pinkBar} />
-          <Typography weight="bold" size={21} style={styles.labelText}>AI Suggested Meals</Typography>
+          <Typography weight="bold" size={21} style={styles.labelText}>
+            AI Suggested Meals
+          </Typography>
         </View>
+
         <View style={styles.smartPicksBadge}>
           <Octicons name="sparkles-fill" size={16} color="#DF5789" />
-          <Typography weight="bold" size={12} style={styles.smartPicksText}>Smart Picks</Typography>
+          <Typography weight="bold" size={12} style={styles.smartPicksText}>
+            Smart Picks
+          </Typography>
         </View>
       </View>
 
-      {/* MEALS LIST */}
+      {/* ── CONTENT ───────────────────────────────────── */}
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#E95D91"
-          style={{ marginTop: 50 }}
-        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#E95D91" />
+          <Typography weight="medium" size={14} style={styles.loadingText}>
+            Finding your favourites...
+          </Typography>
+        </View>
+
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#CCC" />
+          <Typography weight="medium" size={14} style={styles.errorText}>
+            {error}
+          </Typography>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchAISuggestedMeals}
+          >
+            <Typography weight="bold" size={14} style={styles.retryText}>
+              Try Again
+            </Typography>
+          </TouchableOpacity>
+        </View>
+
+      ) : meals.length === 0 ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="restaurant-outline" size={48} color="#CCC" />
+          <Typography weight="medium" size={14} style={styles.errorText}>
+            No suggestions available right now.
+          </Typography>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchAISuggestedMeals}
+          >
+            <Typography weight="bold" size={14} style={styles.retryText}>
+              Refresh
+            </Typography>
+          </TouchableOpacity>
+        </View>
+
       ) : (
         <ScrollView
           contentContainerStyle={styles.mealsContainer}
@@ -128,6 +193,7 @@ export default function AIQuickOrderScreen() {
           ))}
         </ScrollView>
       )}
+
     </View>
   );
 }
@@ -138,7 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
-  /* ── HEADER ── */
+  // ── Header ─────────────────────────────────────────────
   header: {
     backgroundColor: "#E95D91",
     paddingTop: Platform.OS === "ios" ? 60 : 50,
@@ -153,24 +219,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
+
   backButton: {
-    marginRight: 16,
     width: 28,
   },
+
   headerCenter: {
     flex: 1,
     alignItems: "center",
   },
+
   headerTitle: {
     color: "#FFFFFF",
     letterSpacing: 0.5,
     left: -6,
   },
-  headerSpacer: {
+
+  refreshButton: {
     width: 28,
+    alignItems: "center",
   },
 
-  /* ── LABEL SECTION ── */
+  // ── Label section ───────────────────────────────────────
   labelSection: {
     flexDirection: "row",
     alignItems: "center",
@@ -184,11 +254,13 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
+
   labelLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
   },
+
   pinkBar: {
     width: 5,
     height: 30,
@@ -196,9 +268,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 10,
   },
+
   labelText: {
     color: "#454545",
   },
+
   smartPicksBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -209,11 +283,50 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginLeft: 16,
   },
+
   smartPicksText: {
     color: "#E95D91",
   },
 
-  /* ── MEALS CONTAINER ── */
+  // ── Loading ─────────────────────────────────────────────
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  loadingText: {
+    color: "#999",
+  },
+
+  // ── Error / Empty ───────────────────────────────────────
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 32,
+  },
+
+  errorText: {
+    color: "#999",
+    textAlign: "center",
+  },
+
+  retryButton: {
+    marginTop: 4,
+    backgroundColor: "#E95D91",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+
+  retryText: {
+    color: "#fff",
+  },
+
+  // ── Meals list ──────────────────────────────────────────
   mealsContainer: {
     paddingHorizontal: 22,
     paddingVertical: 12,
