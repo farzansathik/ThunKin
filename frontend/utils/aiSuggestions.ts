@@ -1,8 +1,7 @@
 import { supabase } from "../lib/supabase";
-import { getCurrentTimeString } from "../utils/debugTime";
-// import AsyncStorage from "@react-native-async-storage/async-storage";  // not add this yet becuz of some issues that make force refresh not work and it not real time.
+import { getCurrentTimeString, getCurrentDateString } from "../utils/debugTime";
+import { DEFAULT_CAPACITY } from "../app/timeslot";
 
-const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
 
 export interface AISuggestion {
@@ -10,6 +9,7 @@ export interface AISuggestion {
   menuName: string;
   restaurantId: number;
   restaurantName: string;
+  shopNum: number | null;
   cafeteriaName: string;
   price: number;
   timeSlot: string;
@@ -23,40 +23,14 @@ export const fetchAISuggestions = async (
   customApiKey?: string
 ): Promise<AISuggestion[]> => {
   try {
-    // Use custom API key if provided, otherwise use environment key
-    const apiKey = customApiKey || process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
-    
+    const apiKey = customApiKey || GROQ_API_KEY;
+
     if (!apiKey) {
       console.error("AI: No API key provided");
       return [];
     }
 
-    // // ── Cache: skip API if not force refresh and cache is fresh ──
-    // if (!forceRefresh) {
-    //   try {
-    //     const cached = await AsyncStorage.getItem(cacheKey);
-    //     if (cached) {
-    //       const { timestamp, data } = JSON.parse(cached);
-    //       const age = Date.now() - timestamp;
-    //       if (age < CACHE_DURATION_MS) {
-    //         console.log("AI: using cache, age:", Math.round(age / 1000), "sec");
-    //         return data;
-    //       }
-    //     }
-    //   } catch (e) {
-    //     console.log("Cache read failed:", e);
-    //   }
-    // } else {
-    //   // Clear cache on force refresh
-    //   try {
-    //     await AsyncStorage.removeItem(cacheKey);
-    //     console.log("AI: cache cleared for refresh");
-    //   } catch (e) {
-    //     console.log("Cache clear failed:", e);
-    //   }
-    // }
-
-    // console.log("AI: fetching fresh suggestions, forceRefresh:", forceRefresh);
+    console.log("AI: fetching suggestions, forceRefresh:", forceRefresh);
 
     // ── 1. Fetch user order history ───────────────────────
     const { data: history, error: historyError } = await supabase
@@ -79,7 +53,7 @@ export const fetchAISuggestions = async (
       return [];
     }
 
-    // ── 2. Fetch active menu items with image_url + cafeteria
+    // ── 2. Fetch active menu items ────────────────────────
     const { data: menuItems, error: menuError } = await supabase
       .from("menu")
       .select(`
@@ -91,6 +65,7 @@ export const fetchAISuggestions = async (
         restaurant:rest_id (
           id,
           name,
+          shop_num,
           open_time,
           close_time,
           status,
@@ -122,20 +97,84 @@ export const fetchAISuggestions = async (
 
     if (availableMenuItems.length === 0) return [];
 
-    // ── 4. Build time slots — lunch priority first ────────
-    const allSlots = generateRemainingSlots(availableMenuItems, currentTime);
-    if (allSlots.length === 0) return [];
+    // ── 3.5. Fetch today's orders for capacity check ──────
+    const todayStr = getCurrentDateString();
 
-    // Separate lunch slots (11:30-13:30) from the rest
-    const lunchSlots = allSlots.filter(s => {
-      const startHour = parseInt(s.substring(0, 2));
-      const startMin = parseInt(s.substring(3, 5));
+    const { data: todayOrders, error: ordersError } = await supabase
+      .from("orders")
+      .select(`
+        pick_up_time,
+        status,
+        order_items!inner ( rest_id )
+      `)
+      .neq("status", "picked_up")
+      .gte("pick_up_time", `${todayStr}T00:00:00`)
+      .lte("pick_up_time", `${todayStr}T23:59:59`);
+
+    if (ordersError) {
+      console.error("Failed to fetch today orders:", ordersError);
+      // continue without capacity check
+    }
+
+    // Build map: "restId_H:MM" → count (matches timeslot screen key format)
+    const slotCountMap = new Map<string, number>();
+
+    (todayOrders || []).forEach((order: any) => {
+      const items = order.order_items || [];
+      items.forEach((item: any) => {
+        const restId = item.rest_id;
+        if (!restId || !order.pick_up_time) return;
+
+        const t = new Date(order.pick_up_time);
+        const h = t.getHours();                           // no padStart — matches screen
+        const m = String(t.getMinutes()).padStart(2, "0"); // padStart minutes only
+        const key = `${restId}_${h}:${m}`;               // e.g. "5_11:30"
+        slotCountMap.set(key, (slotCountMap.get(key) ?? 0) + 1);
+      });
+    });
+
+    console.log("Slot count map:", Object.fromEntries(slotCountMap));
+
+    // ── 4. Build slots PER RESTAURANT (with capacity) ─────
+    const restaurantSlotsMap = new Map<number, string[]>();
+    const restaurantMap = new Map<number, any>();
+
+    availableMenuItems.forEach((item: any) => {
+      const restId = item.restaurant?.id;
+      if (restId && !restaurantMap.has(restId)) {
+        restaurantMap.set(restId, item.restaurant);
+      }
+    });
+
+    restaurantMap.forEach((restaurant: any, restId: number) => {
+      const slots = generateSlotsForRestaurant(
+        restaurant,
+        currentTime,
+        restId,
+        slotCountMap,
+      );
+      restaurantSlotsMap.set(restId, slots);
+      console.log(`Restaurant ${restId} (${restaurant.name}): ${slots.length} available slots`);
+    });
+
+    // Combined pool for AI prompt
+    const allSlotsCombined = Array.from(
+      new Set(Array.from(restaurantSlotsMap.values()).flat())
+    ).sort();
+
+    if (allSlotsCombined.length === 0) {
+      console.log("No available slots across any restaurant");
+      return [];
+    }
+
+    // Lunch priority (11:30 - 13:30)
+    const lunchSlots = allSlotsCombined.filter(s => {
+      const startHour = parseInt(s.split(":")[0]);
+      const startMin = parseInt(s.split(":")[1].split(" ")[0]);
       const totalMin = startHour * 60 + startMin;
       return totalMin >= 11 * 60 + 30 && totalMin <= 13 * 60 + 30;
     });
-    const otherSlots = allSlots.filter(s => !lunchSlots.includes(s));
-
-    // Put lunch slots first, then shuffle the rest
+    const otherSlots = allSlotsCombined.filter(s => !lunchSlots.includes(s));
     const prioritizedSlots = [
       ...shuffleArray([...lunchSlots]),
       ...shuffleArray([...otherSlots]),
@@ -153,14 +192,14 @@ export const fetchAISuggestions = async (
         ).join("\n")
       : "No order history — prioritize lunch slots around 11:30-13:00";
 
-    // ── 6. Build menu text (ID only for names — no Thai) ──
+    // ── 6. Build menu text (IDs only — no Thai text to AI) ─
     const menuText = availableMenuItems.map((item: any) =>
       `ID:${item.id} | ฿${item.price} | RestID:${item.rest_id}`
     ).join("\n");
 
     // ── 7. Random variation ───────────────────────────────
     const randomSeed = Math.floor(Math.random() * 99999);
-    const slotSample = prioritizedSlots.slice(0, 15).join(", ");
+    const slotSample = prioritizedSlots.slice(0, 20).join(", ");
 
     // ── 8. Build prompt ───────────────────────────────────
     const prompt = `You are a meal suggestion assistant for a Thai university canteen app.
@@ -170,7 +209,7 @@ Variation: ${randomSeed}
 User order history (menuId + time they ordered):
 ${historyText}
 
-Priority time slots (suggest from these first — lunch hours):
+Priority time slots (lunch hours — use these first):
 ${lunchSlots.slice(0, 10).join(", ")}
 
 All available time slots:
@@ -183,9 +222,9 @@ RULES:
 1. Suggest exactly 5 DIFFERENT meals — all different menuIds
 2. PRIORITIZE lunch time slots (11:30-13:30) for most suggestions
 3. Each suggestion can have a different timeSlot — spread naturally
-4. timeSlot MUST come from the available slots list
+4. timeSlot MUST come from the available slots list above
 5. Variation ${randomSeed} — suggest a DIFFERENT combination each time
-6. Return menuId as a NUMBER only
+6. Return menuId and restaurantId as NUMBERS only
 
 Respond ONLY as valid JSON array, no markdown:
 [{"menuId":<number>,"restaurantId":<number>,"price":<number>,"timeSlot":"<from available slots>","reason":"<max 8 words in English>"}]`;
@@ -235,19 +274,26 @@ Current variation: ${randomSeed}`,
     }
 
     // ── 10. Parse JSON ────────────────────────────────────
-    const clean = rawText.replace(/```json|```/g, "").trim();
+    let clean = rawText.replace(/```json|```/g, "").trim();
+    clean = clean.replace(/[\u200B-\u200D\uFEFF]/g, "");
 
     let suggestions: any[] = [];
     try {
       suggestions = JSON.parse(clean);
+      if (!Array.isArray(suggestions)) {
+        console.error("Groq response is not an array");
+        return [];
+      }
     } catch (parseErr) {
-      console.error("JSON parse failed. Raw was:", clean);
+      console.error("JSON parse failed:", parseErr);
+      console.error("Cleaned text:", clean.substring(0, 200));
       return [];
     }
 
-    // ── 11. Validate + inject ALL real data from DB ───────
+    // Fix common JSON parsing issues (e.g., missing quotes in "reason" field) later if needed. soemtimes the AI forgets to put quotes around the reason, which breaks parsing.
+
+    // ── 11. Validate + inject real data + per-restaurant slots
     const menuMap = new Map(availableMenuItems.map((m: any) => [Number(m.id), m]));
-    const allSlotsSet = new Set(allSlots);
     const seenIds = new Set<number>();
 
     const validated: AISuggestion[] = suggestions
@@ -267,36 +313,62 @@ Current variation: ${randomSeed}`,
       .map(s => {
         const realItem = menuMap.get(Number(s.menuId)) as any;
         const rest = realItem?.restaurant;
+        const restId = Number(rest?.id);
         const cafName = rest?.cafeteria?.name ?? null;
+
+        // Get THIS restaurant's valid + available slots only
+        const restSlots = restaurantSlotsMap.get(restId) ?? [];
+        const restSlotsSet = new Set(restSlots);
+
+        // Lunch slots for THIS restaurant
+        const restLunchSlots = restSlots.filter(slot => {
+          const startHour = parseInt(slot.split(":")[0]);
+          const startMin = parseInt(slot.split(":")[1].split(" ")[0]);
+          const totalMin = startHour * 60 + startMin;
+          return totalMin >= 11 * 60 + 30 && totalMin <= 13 * 60 + 30;
+        });
+
+        // Pick valid slot:
+        // 1. Use AI's suggestion if valid for this restaurant
+        // 2. Fall back to random lunch slot for this restaurant
+        // 3. Fall back to any slot for this restaurant
+        // 4. Return null if no slots at all (will be filtered out)
+        let selectedTimeSlot: string | null = null;
+
+        if (restSlotsSet.has(s.timeSlot)) {
+          selectedTimeSlot = s.timeSlot;
+        } else if (restLunchSlots.length > 0) {
+          selectedTimeSlot = restLunchSlots[
+            Math.floor(Math.random() * restLunchSlots.length)
+          ];
+          console.log(`Slot "${s.timeSlot}" invalid for rest ${restId}, using lunch: ${selectedTimeSlot}`);
+        } else if (restSlots.length > 0) {
+          selectedTimeSlot = restSlots[
+            Math.floor(Math.random() * restSlots.length)
+          ];
+          console.log(`No lunch slots for rest ${restId}, using: ${selectedTimeSlot}`);
+        } else {
+          console.log(`No available slots for restaurant ${restId} — skipping`);
+          return null;
+        }
 
         return {
           menuId: Number(s.menuId),
-          menuName: realItem?.name ?? "",           // ← always from DB
-          restaurantId: Number(rest?.id ?? s.restaurantId),
-          restaurantName: rest?.name ?? "",          // ← always from DB
-          cafeteriaName: cafName ?? "",              // ← from DB
-          price: Number(realItem?.price ?? s.price), // ← always from DB
-          timeSlot: allSlotsSet.has(s.timeSlot)
-            ? s.timeSlot
-            : prioritizedSlots[Math.floor(Math.random() * Math.min(5, prioritizedSlots.length))],
+          menuName: realItem?.name ?? "",
+          restaurantId: restId,
+          restaurantName: rest?.name ?? "",
+          shopNum: rest?.shop_num ?? null,
+          cafeteriaName: cafName ?? "",
+          price: Number(realItem?.price ?? s.price),
+          timeSlot: selectedTimeSlot,
           reason: s.reason ?? "",
-          imageUrl: realItem?.image_url ?? null,     // ← from DB
+          imageUrl: realItem?.image_url ?? null,
         };
-      });
+      })
+      .filter(Boolean) as AISuggestion[];
 
     console.log("Validated unique:", validated.length);
     console.log("Slots assigned:", validated.map(v => `${v.menuName} → ${v.timeSlot}`));
-
-    // // ── 12. Save to cache ─────────────────────────────────
-    // try {
-    //   await AsyncStorage.setItem(
-    //     cacheKey,
-    //     JSON.stringify({ timestamp: Date.now(), data: validated })
-    //   );
-    //   console.log("AI: saved to cache");
-    // } catch (e) {
-    //   console.log("Cache write failed:", e);
-    // }
 
     return validated;
 
@@ -308,27 +380,57 @@ Current variation: ${randomSeed}`,
 
 // ── Helpers ───────────────────────────────────────────────
 
-const generateRemainingSlots = (menuItems: any[], currentTime: string): string[] => {
+const generateSlotsForRestaurant = (
+  restaurant: any,
+  currentTime: string,
+  restId?: number,
+  slotCountMap?: Map<string, number>,
+): string[] => {
   const slots: string[] = [];
 
-  let latestClose = "16:30";
-  menuItems.forEach((item: any) => {
-    const close = item.restaurant?.close_time?.substring(0, 5) ?? "16:00";
-    if (close > latestClose) latestClose = close;
-  });
+  try {
+    if (!restaurant?.open_time || !restaurant?.close_time) return [];
 
-  const [curH, curM] = currentTime.split(":").map(Number);
-  const [closeH, closeM] = latestClose.split(":").map(Number);
+    const [curH, curM] = currentTime.split(":").map(Number);
+    const nowInMinutes = curH * 60 + curM;
 
-  const startMinutes = Math.ceil((curH * 60 + curM + 1) / 10) * 10;
-  const endMinutes = closeH * 60 + closeM;
+    const [openH, openM] = restaurant.open_time.substring(0, 5).split(":").map(Number);
+    const [closeH, closeM] = restaurant.close_time.substring(0, 5).split(":").map(Number);
 
-  for (let m = startMinutes; m < endMinutes; m += 10) {
-    const sh = String(Math.floor(m / 60)).padStart(2, "0");
-    const sm = String(m % 60).padStart(2, "0");
-    const eh = String(Math.floor((m + 10) / 60)).padStart(2, "0");
-    const em = String((m + 10) % 60).padStart(2, "0");
-    slots.push(`${sh}:${sm} - ${eh}:${em}`);
+    const openInMinutes = openH * 60 + openM;
+    const closeInMinutes = closeH * 60 + closeM;
+
+    // Match time slot screen exactly:
+    // earliest = max(now + 20min, open + 20min), rounded up to 10-min
+    const earliestFromNow = nowInMinutes + 20;
+    const earliestFromOpen = openInMinutes + 20;
+    const startMinutes = Math.ceil(
+      Math.max(earliestFromNow, earliestFromOpen) / 10
+    ) * 10;
+
+    // latest = close - 30min (matches timeslot screen)
+    const latestSlotStart = closeInMinutes - 30;
+
+    for (let m = startMinutes; m <= latestSlotStart; m += 10) {
+      const sh = Math.floor(m / 60);                    // no padStart — matches screen
+      const sm = String(m % 60).padStart(2, "0");        // padStart minutes only
+      const eh = Math.floor((m + 10) / 60);
+      const em = String((m + 10) % 60).padStart(2, "0");
+
+      // ── Capacity check (mirrors timeslot screen logic) ──
+      if (restId !== undefined && slotCountMap) {
+        const key = `${restId}_${sh}:${sm}`;             // e.g. "5_11:30"
+        const booked = slotCountMap.get(key) ?? 0;
+        if (booked >= DEFAULT_CAPACITY) {
+          console.log(`Slot ${sh}:${sm} rest ${restId} FULL (${booked}/12) — skip`);
+          continue;
+        }
+      }
+
+      slots.push(`${sh}:${sm} - ${eh}:${em}`);
+    }
+  } catch (err) {
+    console.error("Error generating slots for restaurant:", err);
   }
 
   return slots;
@@ -341,3 +443,27 @@ const shuffleArray = <T>(arr: T[]): T[] => {
   }
   return arr;
 };
+
+
+
+// ตอนนี้ทำงานเเบบนี้:
+
+// 1. User order history
+//    → If user ordered menuId:5 at 12:30 before, AI will suggest similar
+//      menu items around that time again
+
+// 2. Time of day priority
+//    → Lunch slots (11:30 - 13:30) are sent to AI first in the slot list
+//    → AI is explicitly told to prioritize these slots
+
+// 3. Variety
+//    → AI must pick 5 DIFFERENT menuIds — no duplicates
+//    → Random seed (0-99999) changes each call so combinations vary
+
+// 4. Available menu only
+//    → Only menu items from open restaurants are sent
+//    → Full capacity slots are already removed before prompt is built
+
+// 5. Price (implicit)
+//    → AI can see prices and tends to balance cheap/mid range items
+//    → No explicit rule but temperature=1.0 adds variety

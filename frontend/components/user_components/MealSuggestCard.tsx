@@ -20,6 +20,7 @@ interface MealItem {
   imageUrl?: string | null;
   menuId: number;
   restaurantId: number;
+  shopNum: number | null;
   shopImage?: string | null;
 }
 

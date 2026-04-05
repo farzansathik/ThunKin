@@ -102,13 +102,27 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
 
       <View style={styles.orderCardMiddle}>
         <Typography
-          size={20}
+          size={18}
           weight="bold"
           style={styles.foodName}
           numberOfLines={1}
         >
           {order.items[0]?.name}
         </Typography>
+
+        {order.cafeteria_name && (
+          <View style={styles.cafeteriaRow}>
+            <Ionicons name="location-outline" size={12} color="#E95D91" />
+            <Typography
+              size={12}
+              weight="medium"
+              style={styles.cafeteriaName}
+              numberOfLines={1}
+            >
+              {order.cafeteria_name}
+            </Typography>
+          </View>
+        )}
 
         <View style={styles.restaurantRow}>
           <Ionicons name="storefront-outline" size={14} color="#E95D91" />
@@ -164,7 +178,7 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
 
         {order.status === "ready" && (
         <TouchableOpacity style={styles.qrButton} onPress={handleQRPress}>
-            <Ionicons name="qr-code-sharp" size={38} color="#bcbcbc" />
+            <Ionicons name="qr-code-sharp" size={50} color="#bcbcbc" />
         </TouchableOpacity>
         )}
       </View>
@@ -187,8 +201,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   orderImage: {
-    width: 80,
-    height: 80,
+    width: 95,
+    height: 95,
     borderRadius: 10,
     backgroundColor: "#E0E0E0",
   },
@@ -208,9 +222,19 @@ const styles = StyleSheet.create({
     maxWidth: 140,
   },
   restaurantRow: {
-    bottom: 3,
+    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
+  },
+  cafeteriaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: -4,
+  },
+  cafeteriaName: {
+    color: "#E95D91",
+    marginLeft: 6,
+    maxWidth: 140,
   },
   foodName: {
     color: "#454545",

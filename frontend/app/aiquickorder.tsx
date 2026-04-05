@@ -26,6 +26,7 @@ interface MealItem {
   timeStatus: "available" | "limited";
   menuId: number;
   restaurantId: number;
+  shopNum: number | null;
   cafeteriaName?: string | null;
   imageUrl?: string | null;
   shopImage?: string | null;
@@ -83,6 +84,7 @@ export default function AIQuickOrderScreen() {
         timeStatus: "available",
         menuId: s.menuId,
         restaurantId: s.restaurantId,
+        shopNum: s.shopNum,
         imageUrl: s.imageUrl,
       }));
 
@@ -138,7 +140,7 @@ export default function AIQuickOrderScreen() {
         shopId: meal.restaurantId,
         shopName: meal.restaurant,
         shopImage: meal.shopImage || "",
-        shopNum: meal.menuId, // Using menuId as identifier for now
+        shopNum: meal.shopNum || null,
         fromAISuggestion: "true",
         menuId: meal.menuId,
         foodName: meal.name,
@@ -275,7 +277,7 @@ const styles = StyleSheet.create({
   // ── Header ─────────────────────────────────────────────
   header: {
     backgroundColor: "#E95D91",
-    paddingTop: Platform.OS === "ios" ? 60 : 50,
+    paddingTop: Platform.OS === "ios" ? 70 : 50,
     paddingBottom: 20,
     paddingHorizontal: 16,
     flexDirection: "row",

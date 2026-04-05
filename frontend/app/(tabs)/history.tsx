@@ -134,7 +134,7 @@ export default function HistoryScreen() {
 
       const { data: restData, error: restError } = await supabase
         .from("restaurant")
-        .select("id, name");
+        .select("id, name, cafe_id, cafeteria:cafe_id(name)");
 
       if (restError) throw restError;
 
@@ -170,12 +170,13 @@ export default function HistoryScreen() {
         ?.map((order: any) => {
           const restId = restIdByOrder.get(order.id);
           const restaurant = restId ? restMap.get(restId) : null;
+          const cafeteriaName = restaurant?.cafeteria?.name || "Cafeteria";
           return {
             id: order.id,
             user_id: order.user_id,
             rest_id: restId?.toString() || "",
             restaurant_name: restaurant?.name || "Unknown Restaurant",
-            cafeteria_name: "Cafeteria",
+            cafeteria_name: cafeteriaName,
             items: itemsByOrder.get(order.id) || [],
             total_price: order.total_price,
             status: order.status,
