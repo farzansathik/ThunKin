@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Typography from "@/components/typography";
@@ -12,9 +13,11 @@ interface MealItem {
   id: string;
   name: string;
   restaurant: string;
+  cafeteriaName?: string | null;
   price: number;
   timeSlot: string;
   timeStatus: "available" | "limited";
+  imageUrl?: string | null;
 }
 
 interface MealSuggestCardProps {
@@ -23,16 +26,28 @@ interface MealSuggestCardProps {
 }
 
 export default function MealSuggestCard({ meal, onPress }: MealSuggestCardProps) {
+  const [imageError, setImageError] = useState(false);
+  const showImage = meal.imageUrl && !imageError;
+
   return (
     <TouchableOpacity
       style={styles.mealCard}
       activeOpacity={0.8}
       onPress={() => onPress(meal.id)}
     >
-      {/* PLACEHOLDER IMAGE AREA */}
-      <View style={styles.imagePlaceholder}>
-        <Ionicons name="image-outline" size={52} color="#CCC" />
-      </View>
+      {/* IMAGE or PLACEHOLDER */}
+      {showImage ? (
+        <Image
+          source={{ uri: meal.imageUrl! }}
+          style={styles.image}
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <View style={styles.imagePlaceholder}>
+          <Ionicons name="image-outline" size={52} color="#CCC" />
+        </View>
+      )}
 
       {/* TIME SLOT BADGE */}
       <MiniTimeSlotCard
@@ -42,6 +57,8 @@ export default function MealSuggestCard({ meal, onPress }: MealSuggestCardProps)
 
       {/* MEAL INFO */}
       <View style={styles.mealInfo}>
+
+        {/* Name + Price row */}
         <View style={styles.nameSection}>
           <Typography
             weight="bold"
@@ -60,13 +77,45 @@ export default function MealSuggestCard({ meal, onPress }: MealSuggestCardProps)
           </Typography>
         </View>
 
-        <Typography
-          weight="bold"
-          size={18}
-          style={styles.restaurantText}
-        >
-          {meal.restaurant}
-        </Typography>
+        {/* Cafeteria - Shop name row */}
+        <View style={styles.locationRow}>
+          {meal.cafeteriaName ? (
+            <>
+              <Typography
+                weight="bold"
+                size={15}
+                style={styles.cafeteriaText}
+              >
+                {meal.cafeteriaName}
+              </Typography>
+
+              <Typography
+                weight="bold"
+                size={15}
+                style={styles.dashText}
+              >
+                {" - "}
+              </Typography>
+
+              <Typography
+                weight="medium"
+                size={15}
+                style={styles.shopText}
+              >
+                {meal.restaurant}
+              </Typography>
+            </>
+          ) : (
+            <Typography
+              weight="bold"
+              size={15}
+              style={styles.cafeteriaText}
+            >
+              {meal.restaurant}
+            </Typography>
+          )}
+        </View>
+
       </View>
     </TouchableOpacity>
   );
@@ -76,7 +125,7 @@ const styles = StyleSheet.create({
   mealCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    marginBottom: 15,
+    marginBottom: 20,
     overflow: "hidden",
     elevation: 3,
     shadowColor: "#000",
@@ -85,6 +134,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     borderWidth: 1,
     borderColor: "#F0F0F0",
+    height: 235,
+  },
+
+  image: {
+    width: "100%",
+    height: 160,
   },
 
   imagePlaceholder: {
@@ -99,7 +154,7 @@ const styles = StyleSheet.create({
 
   mealInfo: {
     padding: 12,
-    paddingBottom: 0,
+    paddingBottom: 12,
     backgroundColor: "#FFFFFF",
   },
 
@@ -107,7 +162,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 6,
+    bottom: 4,
   },
 
   mealName: {
@@ -121,8 +176,22 @@ const styles = StyleSheet.create({
     minWidth: 40,
   },
 
-  restaurantText: {
-    bottom: 12,
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    bottom: 10,
+  },
+
+  cafeteriaText: {
     color: "#E95D91",
+  },
+
+  dashText: {
+    color: "#E95D91",
+  },
+
+  shopText: {
+    color: "#999999",
   },
 });

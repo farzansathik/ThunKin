@@ -1,40 +1,79 @@
 import { supabase } from "../lib/supabase";
 import { getCurrentTimeString } from "../utils/debugTime";
+// import AsyncStorage from "@react-native-async-storage/async-storage";  // not add this yet becuz of some issues that make force refresh not work and it not real time.
+
+const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const GROQ_API_KEY = "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"; // Groq key (now i use my (tat) chula account)
 
 export interface AISuggestion {
   menuId: number;
   menuName: string;
   restaurantId: number;
   restaurantName: string;
+  cafeteriaName: string;
   price: number;
   timeSlot: string;
   reason: string;
+  imageUrl: string | null;
 }
 
-export const fetchAISuggestions = async (userId: number): Promise<AISuggestion[]> => {
+export const fetchAISuggestions = async (
+  userId: number,
+  forceRefresh: boolean = false
+): Promise<AISuggestion[]> => {
   try {
-    // 1. Fetch user's last 30 order history
+    // const cacheKey = `ai_suggestions_${userId}`;
+    console.log("AI: fetching fresh suggestions, forceRefresh:", forceRefresh);
+
+    // // ── Cache: skip API if not force refresh and cache is fresh ──
+    // if (!forceRefresh) {
+    //   try {
+    //     const cached = await AsyncStorage.getItem(cacheKey);
+    //     if (cached) {
+    //       const { timestamp, data } = JSON.parse(cached);
+    //       const age = Date.now() - timestamp;
+    //       if (age < CACHE_DURATION_MS) {
+    //         console.log("AI: using cache, age:", Math.round(age / 1000), "sec");
+    //         return data;
+    //       }
+    //     }
+    //   } catch (e) {
+    //     console.log("Cache read failed:", e);
+    //   }
+    // } else {
+    //   // Clear cache on force refresh
+    //   try {
+    //     await AsyncStorage.removeItem(cacheKey);
+    //     console.log("AI: cache cleared for refresh");
+    //   } catch (e) {
+    //     console.log("Cache clear failed:", e);
+    //   }
+    // }
+
+    // console.log("AI: fetching fresh suggestions, forceRefresh:", forceRefresh);
+
+    // ── 1. Fetch user order history ───────────────────────
     const { data: history, error: historyError } = await supabase
-    .from("orders")
-    .select(`
+      .from("orders")
+      .select(`
         pick_up_time,
         created_at,
         order_items (
-        quantity,
-        menu ( id, name, price ),
-        restaurant:rest_id ( id, name )
+          quantity,
+          menu ( id, name, price ),
+          restaurant:rest_id ( id, name )
         )
-    `)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })  // ✅ ordering on the root table now
-    .limit(30);
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30);
 
     if (historyError) {
       console.error("Failed to fetch history:", historyError);
       return [];
     }
 
-    // 2. Fetch all active menu items with their restaurant info
+    // ── 2. Fetch active menu items with image_url + cafeteria
     const { data: menuItems, error: menuError } = await supabase
       .from("menu")
       .select(`
@@ -42,7 +81,16 @@ export const fetchAISuggestions = async (userId: number): Promise<AISuggestion[]
         name,
         price,
         rest_id,
-        restaurant:rest_id ( id, name, open_time, close_time, status )
+        image_url,
+        restaurant:rest_id (
+          id,
+          name,
+          open_time,
+          close_time,
+          status,
+          cafe_id,
+          cafeteria:cafe_id ( name )
+        )
       `)
       .eq("status", true);
 
@@ -51,126 +99,200 @@ export const fetchAISuggestions = async (userId: number): Promise<AISuggestion[]
       return [];
     }
 
-    // 3. Filter to only restaurants that are currently open
+    // ── 3. Filter to open restaurants only ────────────────
     const currentTime = getCurrentTimeString();
 
     const availableMenuItems = menuItems.filter((item: any) => {
-    const rest = item.restaurant;
-    if (!rest || !rest.status) return false;
+      const rest = item.restaurant;
+      if (!rest || !rest.status) return false;
+      const stripTime = (t: string) => t?.substring(0, 5) ?? "";
+      const openTime = stripTime(rest.open_time);
+      const closeTime = stripTime(rest.close_time);
+      return currentTime >= openTime && currentTime <= closeTime;
+    });
 
-    // "06:00:00+07" → "06:00"
-    const stripTime = (t: string) => t?.substring(0, 5) ?? "";
-    const openTime = stripTime(rest.open_time);
-    const closeTime = stripTime(rest.close_time);
-
-    console.log(`${rest.name}: open=${openTime} close=${closeTime} now=${currentTime} pass=${currentTime >= openTime && currentTime <= closeTime}`);
-
-    return currentTime >= openTime && currentTime <= closeTime;
-});
-
-    // ── DEBUG: move logs BEFORE early return ──────────────
-    console.log("Total menu items fetched:", menuItems?.length);
+    console.log("Available menu items:", availableMenuItems.length);
     console.log("Current time:", currentTime);
-    console.log("Available menu after time filter:", availableMenuItems.length);
-    console.log("Sample restaurant:", JSON.stringify(menuItems?.[0]?.restaurant));
-    console.log("History length:", history?.length);
-    console.log("menuItems sample:", JSON.stringify(menuItems?.[0]));
-    // ──────────────────────────────────────────────────────
 
     if (availableMenuItems.length === 0) return [];
 
-    // 4. Build next available time slot (round up to next 10-min slot)
-    const nextSlot = getNextTimeSlot();
+    // ── 4. Build time slots — lunch priority first ────────
+    const allSlots = generateRemainingSlots(availableMenuItems, currentTime);
+    if (allSlots.length === 0) return [];
 
-    // 5. Format history for prompt
+    // Separate lunch slots (11:30-13:30) from the rest
+    const lunchSlots = allSlots.filter(s => {
+      const startHour = parseInt(s.substring(0, 2));
+      const startMin = parseInt(s.substring(3, 5));
+      const totalMin = startHour * 60 + startMin;
+      return totalMin >= 11 * 60 + 30 && totalMin <= 13 * 60 + 30;
+    });
+    const otherSlots = allSlots.filter(s => !lunchSlots.includes(s));
+
+    // Put lunch slots first, then shuffle the rest
+    const prioritizedSlots = [
+      ...shuffleArray([...lunchSlots]),
+      ...shuffleArray([...otherSlots]),
+    ];
+
+    // ── 5. Build history text ─────────────────────────────
     const historyText = history && history.length > 0
-    ? (history as any[]).flatMap(order =>
-        (order.order_items || []).map((item: any) =>
-            `- ${item.menu?.name} from ${item.restaurant?.name} at ${order.pick_up_time}`
-        )
+      ? (history as any[]).flatMap(order =>
+          (order.order_items || []).map((item: any) => {
+            const t = order.pick_up_time
+              ? String(order.pick_up_time).substring(11, 16)
+              : "unknown";
+            return `- menuId:${item.menu?.id} ordered at ${t}`;
+          })
         ).join("\n")
-    : "No order history yet — suggest popular affordable items";
+      : "No order history — prioritize lunch slots around 11:30-13:00";
 
-    // 6. Format available menu for prompt
+    // ── 6. Build menu text (ID only for names — no Thai) ──
     const menuText = availableMenuItems.map((item: any) =>
-      `ID:${item.id} | ${item.name} | ฿${item.price} | ${item.restaurant?.name} | RestID:${item.rest_id}`
+      `ID:${item.id} | ฿${item.price} | RestID:${item.rest_id}`
     ).join("\n");
 
-    // 7. Call Gemini Flash API
-    const prompt = `
-You are a meal suggestion assistant for a Thai university canteen app called ThunKin.
+    // ── 7. Random variation ───────────────────────────────
+    const randomSeed = Math.floor(Math.random() * 99999);
+    const slotSample = prioritizedSlots.slice(0, 15).join(", ");
 
+    // ── 8. Build prompt ───────────────────────────────────
+    const prompt = `You are a meal suggestion assistant for a Thai university canteen app.
 Current time: ${currentTime}
-Next available pickup slot: ${nextSlot}
+Variation: ${randomSeed}
 
-User's recent order history (most recent first):
+User order history (menuId + time they ordered):
 ${historyText}
 
-Available menu items RIGHT NOW (only suggest from this list):
+Priority time slots (suggest from these first — lunch hours):
+${lunchSlots.slice(0, 10).join(", ")}
+
+All available time slots:
+${slotSample}
+
+Available menu IDs and prices:
 ${menuText}
 
-Based on the user's order patterns (frequency, time of day, preferred restaurant),
-suggest exactly 5 meals from the available menu list above.
-Prioritize meals they order frequently or at similar times of day.
-If no history, suggest popular/affordable items.
+RULES:
+1. Suggest exactly 5 DIFFERENT meals — all different menuIds
+2. PRIORITIZE lunch time slots (11:30-13:30) for most suggestions
+3. Each suggestion can have a different timeSlot — spread naturally
+4. timeSlot MUST come from the available slots list
+5. Variation ${randomSeed} — suggest a DIFFERENT combination each time
+6. Return menuId as a NUMBER only
 
-Respond ONLY in valid JSON array, no other text:
-[
-  {
-    "menuId": <number from ID: above>,
-    "menuName": "<name>",
-    "restaurantId": <RestID number>,
-    "restaurantName": "<restaurant name>",
-    "price": <number>,
-    "timeSlot": "${nextSlot}",
-    "reason": "<short reason in English, max 8 words>"
-  }
-]
-`;
+Respond ONLY as valid JSON array, no markdown:
+[{"menuId":<number>,"restaurantId":<number>,"price":<number>,"timeSlot":"<from available slots>","reason":"<max 8 words in English>"}]`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyChxwgmdguuFqez4TlGhPum3VYwLhNoW_o`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
-        }),
-      }
-    );
+    // ── 9. Call Groq ──────────────────────────────────────
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: `You are a meal suggestion assistant.
+Always respond with valid JSON only. No markdown. No extra text.
+Suggest exactly 5 meals with DIFFERENT menuIds.
+Each meal should have a realistic timeSlot — prioritize lunch hours 11:30-13:30.
+Current variation: ${randomSeed}`,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 1.0,
+        max_tokens: 800,
+      }),
+    });
 
+    console.log("Groq HTTP status:", response.status);
     const data = await response.json();
-    console.log("HTTP status:", response.status);
-    console.log("Full API response:", JSON.stringify(data));
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // ── DEBUG: log raw Gemini response ──────────────────
-    console.log("Gemini raw response:", rawText);
-    console.log("Full API response:", JSON.stringify(data));
-    // ────────────────────────────────────────────────────
+    if (!response.ok) {
+      console.error("Groq API error:", JSON.stringify(data));
+      return [];
+    }
 
+    const rawText = data?.choices?.[0]?.message?.content ?? "";
+    console.log("Groq raw response:", rawText);
 
-    // 8. Parse JSON — strip markdown fences if present
+    if (!rawText || rawText.length === 0) {
+      console.error("Groq returned empty response");
+      return [];
+    }
+
+    // ── 10. Parse JSON ────────────────────────────────────
     const clean = rawText.replace(/```json|```/g, "").trim();
-    if (!clean || clean.length === 0) {
-    console.error("Gemini returned empty response");
-    return [];
-    }
 
-    let suggestions: AISuggestion[] = [];
+    let suggestions: any[] = [];
     try {
-    suggestions = JSON.parse(clean);
+      suggestions = JSON.parse(clean);
     } catch (parseErr) {
-    console.error("JSON parse failed. Raw text was:", clean);
-    return [];
+      console.error("JSON parse failed. Raw was:", clean);
+      return [];
     }
 
-    // 9. Validate — make sure each suggestion exists in our menu list
-    const validMenuIds = new Set(availableMenuItems.map((m: any) => m.id));
-    const validated = suggestions.filter(s => validMenuIds.has(s.menuId));
+    // ── 11. Validate + inject ALL real data from DB ───────
+    const menuMap = new Map(availableMenuItems.map((m: any) => [Number(m.id), m]));
+    const allSlotsSet = new Set(allSlots);
+    const seenIds = new Set<number>();
 
-    return validated.slice(0, 5);
+    const validated: AISuggestion[] = suggestions
+      .filter(s => {
+        const id = Number(s.menuId);
+        if (!menuMap.has(id)) {
+          console.log("Rejected - menuId not in DB:", s.menuId);
+          return false;
+        }
+        if (seenIds.has(id)) {
+          console.log("Rejected - duplicate menuId:", s.menuId);
+          return false;
+        }
+        seenIds.add(id);
+        return true;
+      })
+      .map(s => {
+        const realItem = menuMap.get(Number(s.menuId)) as any;
+        const rest = realItem?.restaurant;
+        const cafName = rest?.cafeteria?.name ?? null;
+
+        return {
+          menuId: Number(s.menuId),
+          menuName: realItem?.name ?? "",           // ← always from DB
+          restaurantId: Number(rest?.id ?? s.restaurantId),
+          restaurantName: rest?.name ?? "",          // ← always from DB
+          cafeteriaName: cafName ?? "",              // ← from DB
+          price: Number(realItem?.price ?? s.price), // ← always from DB
+          timeSlot: allSlotsSet.has(s.timeSlot)
+            ? s.timeSlot
+            : prioritizedSlots[Math.floor(Math.random() * Math.min(5, prioritizedSlots.length))],
+          reason: s.reason ?? "",
+          imageUrl: realItem?.image_url ?? null,     // ← from DB
+        };
+      });
+
+    console.log("Validated unique:", validated.length);
+    console.log("Slots assigned:", validated.map(v => `${v.menuName} → ${v.timeSlot}`));
+
+    // // ── 12. Save to cache ─────────────────────────────────
+    // try {
+    //   await AsyncStorage.setItem(
+    //     cacheKey,
+    //     JSON.stringify({ timestamp: Date.now(), data: validated })
+    //   );
+    //   console.log("AI: saved to cache");
+    // } catch (e) {
+    //   console.log("Cache write failed:", e);
+    // }
+
+    return validated;
 
   } catch (err) {
     console.error("AI suggestion error:", err);
@@ -178,24 +300,38 @@ Respond ONLY in valid JSON array, no other text:
   }
 };
 
-// Round current time up to next 10-min slot
-const getNextTimeSlot = (): string => {
-  const now = new Date();
-  const minutes = now.getMinutes();
-  const roundedMinutes = Math.ceil((minutes + 1) / 10) * 10;
+// ── Helpers ───────────────────────────────────────────────
 
-  const start = new Date(now);
-  start.setMinutes(roundedMinutes, 0, 0);
-  if (roundedMinutes >= 60) {
-    start.setHours(start.getHours() + 1);
-    start.setMinutes(0);
+const generateRemainingSlots = (menuItems: any[], currentTime: string): string[] => {
+  const slots: string[] = [];
+
+  let latestClose = "16:30";
+  menuItems.forEach((item: any) => {
+    const close = item.restaurant?.close_time?.substring(0, 5) ?? "16:00";
+    if (close > latestClose) latestClose = close;
+  });
+
+  const [curH, curM] = currentTime.split(":").map(Number);
+  const [closeH, closeM] = latestClose.split(":").map(Number);
+
+  const startMinutes = Math.ceil((curH * 60 + curM + 1) / 10) * 10;
+  const endMinutes = closeH * 60 + closeM;
+
+  for (let m = startMinutes; m < endMinutes; m += 10) {
+    const sh = String(Math.floor(m / 60)).padStart(2, "0");
+    const sm = String(m % 60).padStart(2, "0");
+    const eh = String(Math.floor((m + 10) / 60)).padStart(2, "0");
+    const em = String((m + 10) % 60).padStart(2, "0");
+    slots.push(`${sh}:${sm} - ${eh}:${em}`);
   }
 
-  const end = new Date(start);
-  end.setMinutes(end.getMinutes() + 10);
+  return slots;
+};
 
-  const fmt = (d: Date) =>
-    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-
-  return `${fmt(start)} - ${fmt(end)}`;
+const shuffleArray = <T>(arr: T[]): T[] => {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 };

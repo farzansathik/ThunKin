@@ -55,11 +55,13 @@ export default function AIQuickOrderScreen() {
         id: String(s.menuId),
         name: s.menuName,
         restaurant: s.restaurantName,
+        cafeteriaName: s.cafeteriaName,
         price: s.price,
         timeSlot: s.timeSlot,
         timeStatus: "available",
         menuId: s.menuId,
         restaurantId: s.restaurantId,
+        imageUrl: s.imageUrl,
       }));
 
       setMeals(mapped);
@@ -331,6 +333,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 12,
     paddingBottom: 30,
-    top: 10,
+    top: 5,
   },
 });
