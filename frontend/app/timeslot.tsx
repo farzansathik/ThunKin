@@ -45,7 +45,7 @@ function todayAt(h: number, m: number): Date {
 
 export default function TimeSlotScreen() {
   const router = useRouter();
-  const { shopId, shopName, shopImage, shopNum } = useLocalSearchParams();
+  const { shopId, shopName, shopImage, shopNum, fromAISuggestion, menuId, foodName, price } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [timeGroups, setTimeGroups] = useState<HourGroup[]>([]);
   const [restaurant, setRestaurant] = useState<{
@@ -208,6 +208,34 @@ export default function TimeSlotScreen() {
     router.back();
   };
 
+  const handleSlotSelect = (slot: TimeSlot) => {
+    // Check if coming from AI suggestions
+    if (fromAISuggestion === "true") {
+      // Navigate directly to food with the selected time slot
+      router.push({
+        pathname: "/food",
+        params: {
+          foodId: menuId,
+          foodName: foodName,
+          shopId: shopId,
+          shopName: shopName,
+          slotTime: slot.time,
+        },
+      });
+    } else {
+      // Default behavior - go to menu
+      router.push({
+        pathname: "/menu",
+        params: {
+          shopId,
+          shopName,
+          slotTime: slot.time,
+          shopImage,
+        },
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -278,6 +306,7 @@ export default function TimeSlotScreen() {
                     shopId={shopId}
                     shopName={shopName}
                     shopImage={shopImage}
+                    onSlotSelect={handleSlotSelect}
                   />
                 ))}
               </View>

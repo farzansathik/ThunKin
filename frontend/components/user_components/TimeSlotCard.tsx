@@ -13,23 +13,32 @@ type Props = {
   shopId: string | string[];
   shopName: string | string[];
   shopImage: string | string[];
+  onSlotSelect?: (slot: TimeSlot) => void;
 };
 
-export default function TimeSlotCard({ slot, shopId, shopName, shopImage }: Props) {
+export default function TimeSlotCard({ slot, shopId, shopName, shopImage, onSlotSelect }: Props) {
   const router = useRouter();
   const isFull = slot.available === 0;
   const isLow = slot.available > 0 && slot.available <= 5;
   const badgeColor = isFull ? "#D5D1D1" : isLow ? "#FFBA42" : "#7EDD7E";
   const textColor = isFull ? "#B4B4B4" : isLow ? "#67370A" : "#0A671E";
 
+  const handlePress = () => {
+    if (onSlotSelect) {
+      onSlotSelect(slot);
+    } else {
+      router.push({
+        pathname: "/menu",
+        params: { shopId, shopName, slotTime: slot.time, shopImage }
+      });
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[styles.slotCard, isFull && styles.disabledCard]}
       disabled={isFull}
-      onPress={() => router.push({
-        pathname: "/menu",
-        params: { shopId, shopName, slotTime: slot.time, shopImage }
-      })}
+      onPress={handlePress}
     >
     <View style={[styles.availableBadge, { backgroundColor: badgeColor }]}>
         <Typography weight="bold" size={8} style={{ color: textColor, textAlign: 'center' }}>

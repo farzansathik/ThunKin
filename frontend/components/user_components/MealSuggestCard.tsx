@@ -18,16 +18,26 @@ interface MealItem {
   timeSlot: string;
   timeStatus: "available" | "limited";
   imageUrl?: string | null;
+  menuId: number;
+  restaurantId: number;
+  shopImage?: string | null;
 }
 
 interface MealSuggestCardProps {
   meal: MealItem;
   onPress: (mealId: string) => void;
+  onTimeSlotPress?: (meal: MealItem) => void;
 }
 
-export default function MealSuggestCard({ meal, onPress }: MealSuggestCardProps) {
+export default function MealSuggestCard({ meal, onPress, onTimeSlotPress }: MealSuggestCardProps) {
   const [imageError, setImageError] = useState(false);
   const showImage = meal.imageUrl && !imageError;
+
+  const handleTimeSlotPress = () => {
+    if (onTimeSlotPress) {
+      onTimeSlotPress(meal);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -49,11 +59,17 @@ export default function MealSuggestCard({ meal, onPress }: MealSuggestCardProps)
         </View>
       )}
 
-      {/* TIME SLOT BADGE */}
-      <MiniTimeSlotCard
-        timeSlot={meal.timeSlot}
-        timeStatus={meal.timeStatus}
-      />
+      {/* TIME SLOT BADGE - CLICKABLE */}
+      <TouchableOpacity
+        style={styles.timeSlotBadgeContainer}
+        onPress={handleTimeSlotPress}
+        activeOpacity={0.7}
+      >
+        <MiniTimeSlotCard
+          timeSlot={meal.timeSlot}
+          timeStatus={meal.timeStatus}
+        />
+      </TouchableOpacity>
 
       {/* MEAL INFO */}
       <View style={styles.mealInfo}>
@@ -150,6 +166,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#EFEFEF",
+  },
+
+  timeSlotBadgeContainer: {
+    position: "absolute",
+    top: 10,
+    right: 10,
   },
 
   mealInfo: {

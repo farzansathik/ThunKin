@@ -12,8 +12,10 @@ import { Ionicons, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Typography from "@/components/typography";
 import MealSuggestCard from "@/components/user_components/MealSuggestCard";
+import APIKeyModal from "@/components/APIKeyModal";
 import { fetchAISuggestions, AISuggestion } from "@/utils/aiSuggestions";
 import { useUser } from "@/context/UserContext";
+import { useAPIKey } from "@/hooks/useAPIKey";
 
 interface MealItem {
   id: string;
@@ -24,18 +26,32 @@ interface MealItem {
   timeStatus: "available" | "limited";
   menuId: number;
   restaurantId: number;
+  cafeteriaName?: string | null;
+  imageUrl?: string | null;
+  shopImage?: string | null;
 }
 
 export default function AIQuickOrderScreen() {
   const router = useRouter();
   const { userId } = useUser();
+  const { apiKey, loading: apiKeyLoading, saveAPIKey, hasAPIKey } = useAPIKey();
   const [meals, setMeals] = useState<MealItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAPIKeyModal, setShowAPIKeyModal] = useState(false);
+  const [savingAPIKey, setSavingAPIKey] = useState(false);
 
   useEffect(() => {
-    fetchAISuggestedMeals();
-  }, [userId]);
+    if (!apiKeyLoading) {
+      if (hasAPIKey) {
+        fetchAISuggestedMeals();
+      } else if (!showAPIKeyModal) {
+        // Only show modal if not already saving
+        setLoading(false);
+        setShowAPIKeyModal(true);
+      }
+    }
+  }, [apiKeyLoading]);
 
   const fetchAISuggestedMeals = async () => {
     if (!userId) {
@@ -44,11 +60,17 @@ export default function AIQuickOrderScreen() {
       return;
     }
 
+    if (!hasAPIKey) {
+      setLoading(false);
+      setShowAPIKeyModal(true);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const suggestions: AISuggestion[] = await fetchAISuggestions(userId);
+      const suggestions: AISuggestion[] = await fetchAISuggestions(userId, false, apiKey || undefined);
 
       // Map AISuggestion → MealItem for the card component
       const mapped: MealItem[] = suggestions.map(s => ({
@@ -73,6 +95,21 @@ export default function AIQuickOrderScreen() {
     }
   };
 
+  const handleAPIKeySave = async (newApiKey: string) => {
+    try {
+      setSavingAPIKey(true);
+      await saveAPIKey(newApiKey);
+      // Refetch with new key
+      await fetchAISuggestedMeals();
+    } catch (err) {
+      console.error("Error saving API key:", err);
+      setError("Failed to load suggestions. Please try again.");
+    } finally {
+      setSavingAPIKey(false);
+      setShowAPIKeyModal(false);
+    }
+  };
+
   const handleBack = () => {
     router.back();
   };
@@ -89,6 +126,23 @@ export default function AIQuickOrderScreen() {
         shopId: meal.restaurantId,
         shopName: meal.restaurant,
         slotTime: meal.timeSlot,
+      },
+    });
+  };
+
+  const handleTimeSlotPress = (meal: MealItem) => {
+    // Navigate to timeslot page with meal context
+    router.push({
+      pathname: "/timeslot",
+      params: {
+        shopId: meal.restaurantId,
+        shopName: meal.restaurant,
+        shopImage: meal.shopImage || "",
+        shopNum: meal.menuId, // Using menuId as identifier for now
+        fromAISuggestion: "true",
+        menuId: meal.menuId,
+        foodName: meal.name,
+        price: meal.price,
       },
     });
   };
@@ -191,10 +245,22 @@ export default function AIQuickOrderScreen() {
               key={meal.id}
               meal={meal}
               onPress={handleMealPress}
+              onTimeSlotPress={handleTimeSlotPress}
             />
           ))}
         </ScrollView>
       )}
+
+      {/* API Key Modal */}
+      <APIKeyModal
+        visible={showAPIKeyModal}
+        onSubmit={handleAPIKeySave}
+        onCancel={() => {
+          setShowAPIKeyModal(false);
+          router.back();
+        }}
+        isLoading={savingAPIKey}
+      />
 
     </View>
   );

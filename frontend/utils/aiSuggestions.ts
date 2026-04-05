@@ -3,7 +3,7 @@ import { getCurrentTimeString } from "../utils/debugTime";
 // import AsyncStorage from "@react-native-async-storage/async-storage";  // not add this yet becuz of some issues that make force refresh not work and it not real time.
 
 const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-const GROQ_API_KEY = "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"; // Groq key (now i use my (tat) chula account)
+const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
 
 export interface AISuggestion {
   menuId: number;
@@ -19,11 +19,17 @@ export interface AISuggestion {
 
 export const fetchAISuggestions = async (
   userId: number,
-  forceRefresh: boolean = false
+  forceRefresh: boolean = false,
+  customApiKey?: string
 ): Promise<AISuggestion[]> => {
   try {
-    // const cacheKey = `ai_suggestions_${userId}`;
-    console.log("AI: fetching fresh suggestions, forceRefresh:", forceRefresh);
+    // Use custom API key if provided, otherwise use environment key
+    const apiKey = customApiKey || process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
+    
+    if (!apiKey) {
+      console.error("AI: No API key provided");
+      return [];
+    }
 
     // // ── Cache: skip API if not force refresh and cache is fresh ──
     // if (!forceRefresh) {
@@ -189,7 +195,7 @@ Respond ONLY as valid JSON array, no markdown:
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "llama-3.1-8b-instant",
