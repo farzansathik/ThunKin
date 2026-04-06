@@ -207,6 +207,9 @@ export default function Vendor() {
       .from("order_items")
       .update({ status: "ready", updated_at: getCurrentDebugTime().toISOString() })
       .eq("id", itemId)
+
+    const selectedItemName = selectedItem?.name ?? null;
+    let nextItemId: number | null = null;
     
     setColumns(prev => {
       const updatedColumns = prev.map(col => ({
@@ -225,10 +228,7 @@ export default function Vendor() {
           .sort((a, b) => b.qty - a.qty),
       }));
       
-      // Check if there are still more items of this type with qty > 0
-      let nextItemId: number | null = null;
-      const selectedItemName = selectedItem?.name;
-      
+      // Compute next selection while we have new columns — but DON'T call setState here
       for (const col of updatedColumns) {
         for (const item of col.items) {
           if (item.name === selectedItemName && item.qty > 0 && item.ids.length > 0) {
@@ -239,16 +239,20 @@ export default function Vendor() {
         if (nextItemId) break;
       }
       
-      // Update selection: if more items exist, keep it with new id; otherwise deselect
-      if (nextItemId) {
-        setSelectedItem({ id: nextItemId, name: selectedItemName! });
-      } else {
-        setSelectedItem(null);
-      }
-      
       return updatedColumns;
     });
-  };
+
+      // setState calls OUTSIDE the updater, in next tick
+      setTimeout(() => {
+        if (nextItemId) {
+          setSelectedItem({ id: nextItemId, name: selectedItemName! });
+        } else {
+          setSelectedItem(null);
+          setShelfBottomSheetOpen(false);
+        }
+      }, 0);
+    };
+
 
   // ── Increase qty by 1 when returned from shelf, re-sort ───────────────
   const handleCleared = async (itemId: number) => {
@@ -262,21 +266,16 @@ export default function Vendor() {
     await fetchOrders();
   };
 
-  // ── Item selection — tap same item again to deselect, auto-open shelf ──
+  // ── Item selection — tap same item again to deselect, Auto-open shelf when selecting, auto-close when deselecting ──
   const handleSelectItem = (item: FoodItem) => {
-    setSelectedItem(prev => {
-      const isCurrentlySelected = prev?.id === item.ids[0];
-      const newSelection = isCurrentlySelected ? null : { id: item.ids[0], name: item.name };
-      
-      // Auto-open shelf when selecting, auto-close when deselecting
-      if (newSelection) {
-        setShelfBottomSheetOpen(true);
-      } else {
-        setShelfBottomSheetOpen(false);
-      }
-      
-      return newSelection;
-    });
+    const isCurrentlySelected = selectedItem?.id === item.ids[0];
+    if (isCurrentlySelected) {
+      setSelectedItem(null);
+      setShelfBottomSheetOpen(false);
+    } else {
+      setSelectedItem({ id: item.ids[0], name: item.name });
+      setShelfBottomSheetOpen(true);
+    }
   };
 
   const jumpToActive = () => {

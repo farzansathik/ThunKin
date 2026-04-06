@@ -178,7 +178,7 @@ export default function OrderHistoryCard({ order, formatTime }: Props) {
 
         {order.status === "ready" && (
         <TouchableOpacity style={styles.qrButton} onPress={handleQRPress}>
-            <Ionicons name="qr-code-sharp" size={50} color="#bcbcbc" />
+            <Ionicons name="qr-code-sharp" size={48} color="#bcbcbc" />
         </TouchableOpacity>
         )}
       </View>
@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: -4,
+    bottom: 3,
   },
   cafeteriaName: {
     color: "#E95D91",

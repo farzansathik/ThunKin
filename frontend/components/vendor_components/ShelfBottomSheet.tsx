@@ -39,6 +39,7 @@ const ShelfBottomSheet: React.FC<ShelfBottomSheetProps> = ({
 }) => {
 const [slots, setSlots] = useState<ShelfSlot[]>([]);
 const [loading, setLoading] = useState(false);
+const [isAssigning, setIsAssigning] = useState(false);
 const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 // Store previous data to prevent re-render
@@ -198,7 +199,10 @@ useEffect(() => {
 
     // ── Empty slot → assign selected order ───────────────
     if (!selectedItemId) return;
+    if (isAssigning) return; // block while busy
+    setIsAssigning(true);    // lock all buttons immediately
 
+    try {
     // 1. Get order_id from order_items
     const { data: orderItemData } = await supabase
       .from('order_items')
@@ -247,8 +251,12 @@ useEffect(() => {
       .eq('id', slot.id);
 
     if (!error) {
-      fetchSlots();
+      await fetchSlots(); // wait for shelf to update
+      await new Promise(resolve => setTimeout(resolve, 500)); // small delay (shouldn't lower than this cuz now when quickly assigning shelf will still occur)
       onAssigned(selectedItemId);
+    }
+    } finally {
+      setIsAssigning(false); // always unlock
     }
   };
 
@@ -285,51 +293,59 @@ useEffect(() => {
         {loading ? (
           <ActivityIndicator color="#E15284" style={{ marginTop: 40 }} />
         ) : (
-          <View style={styles.gridContainer}>
-            {Array.from({ length: ROWS }).map((_, rowIndex) => (
-              <View key={rowIndex} style={styles.row}>
-                {Array.from({ length: COLS }).map((_, colIndex) => {
-                  const slot = getSlot(rowIndex, colIndex);
-                  const occupied = slot?.status === 'occupied';
-                  const rowNum = ROWS - rowIndex;
-                  const colLetter = String.fromCharCode(65 + colIndex);
-                  const label = `${rowNum}${colLetter}`;
-
-                  return (
-                    <TouchableOpacity
-                      key={colIndex}
-                      style={[
-                        styles.gridButton,
-                        occupied && styles.gridButtonOccupied,
-                      ]}
-                      onPress={() => slot && handleSlotPress(slot)}
-                    >
-                      <Typography
-                        weight="bold"
-                        size={14}
-                        color={occupied ? '#fff' : '#E15284'}
-                      >
-                        {label}
-                      </Typography>
-                      {occupied && (
-                        <Typography
-                          weight="medium"
-                          size={10}
-                          color="#fff"
-                          style={styles.slotFoodName}
-                          numberOfLines={2}
-                        >
-                          {slot?.menu_name}
-                        </Typography>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+          <View style={{ flex: 1 }}>
+            {/* Assigning overlay — blocks all taps and shows spinner */}
+            {isAssigning && (
+              <View style={styles.assigningOverlay}>
+                <ActivityIndicator size="large" color="#E15284" />
+                <Typography weight="bold" size={14} color="#E15284" style={{ marginTop: 10 }}>
+                  Placing on shelf...
+                </Typography>
               </View>
-            ))}
+            )}
+
+            <View style={[styles.gridContainer, isAssigning && { opacity: 0.3 }]}>
+              {Array.from({ length: ROWS }).map((_, rowIndex) => (
+                <View key={rowIndex} style={styles.row}>
+                  {Array.from({ length: COLS }).map((_, colIndex) => {
+                    const slot = getSlot(rowIndex, colIndex);
+                    const occupied = slot?.status === 'occupied';
+                    const rowNum = ROWS - rowIndex;
+                    const colLetter = String.fromCharCode(65 + colIndex);
+                    const label = `${rowNum}${colLetter}`;
+
+                    return (
+                      <TouchableOpacity
+                        key={colIndex}
+                        style={[
+                          styles.gridButton,
+                          occupied && styles.gridButtonOccupied,
+                        ]}
+                        onPress={() => slot && handleSlotPress(slot)}
+                        disabled={isAssigning}
+                      >
+                        <Typography weight="bold" size={14} color={occupied ? '#fff' : '#E15284'}>
+                          {label}
+                        </Typography>
+                        {occupied && (
+                          <Typography
+                            weight="medium"
+                            size={10}
+                            color="#fff"
+                            style={styles.slotFoodName}
+                            numberOfLines={2}
+                          >
+                            {slot?.menu_name}
+                          </Typography>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
           </View>
         )}
-
       </View>
     </>
   );
@@ -400,6 +416,14 @@ const styles = StyleSheet.create({
   slotFoodName: {
     textAlign: 'center',
     marginTop: 2,
+  },
+  assigningOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    borderRadius: 12,
   },
 });
 
